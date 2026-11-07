@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- DLR: ironpython2/Src/DLR/Src/Microsoft.Dynamic, for .NET 10 (see ../IronPython.Build.props). -->
+  <PropertyGroup>
+    <OctgnIronPythonComponent>Dlr</OctgnIronPythonComponent>
+  </PropertyGroup>
+  <Import Project="..\IronPython.Build.props" />
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Dynamic</AssemblyName>
+    <RootNamespace>Microsoft.Scripting</RootNamespace>
+    <OctgnSource>$(DlrRoot)Src\Microsoft.Dynamic\</OctgnSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- *.netfx.cs: .NET Framework only; *.netcoreapp.cs: .NET (Core). -->
+    <Compile Include="$(OctgnSource)**\*.cs" Exclude="$(OctgnSource)obj\**;$(OctgnSource)bin\**;$(OctgnSource)**\*.netfx.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Scripting\Microsoft.Scripting.csproj" />
+    <ProjectReference Include="..\Microsoft.Scripting.Metadata\Microsoft.Scripting.Metadata.csproj" />
+  </ItemGroup>
+</Project>

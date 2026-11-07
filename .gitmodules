@@ -4,3 +4,7 @@
 [submodule "octgnFX/Octgn.GameStudio/Resources/Templates/Basic-Game"]
 	path = octgnFX/Octgn.GameStudio/Resources/Templates/Basic-Game
 	url = https://github.com/octgn/Basic-Game.git
+[submodule "octgnFX/External/ironpython2"]
+	path = octgnFX/External/ironpython2
+	url = https://github.com/IronLanguages/ironpython2.git
+	shallow = true

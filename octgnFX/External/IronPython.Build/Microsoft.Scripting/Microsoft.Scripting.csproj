@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- DLR: ironpython2/Src/DLR/Src/Microsoft.Scripting, for .NET 10 (see ../IronPython.Build.props). -->
+  <PropertyGroup>
+    <OctgnIronPythonComponent>Dlr</OctgnIronPythonComponent>
+  </PropertyGroup>
+  <Import Project="..\IronPython.Build.props" />
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Scripting</AssemblyName>
+    <RootNamespace>Microsoft.Scripting</RootNamespace>
+    <OctgnSource>$(DlrRoot)Src\Microsoft.Scripting\</OctgnSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(OctgnSource)**\*.cs" Exclude="$(OctgnSource)obj\**;$(OctgnSource)bin\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CodeDom" Version="$(OctgnDotNetLibrariesVersion)" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="$(OctgnDotNetLibrariesVersion)" />
+  </ItemGroup>
+</Project>

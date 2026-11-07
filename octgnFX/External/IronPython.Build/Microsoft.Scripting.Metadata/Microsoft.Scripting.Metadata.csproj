@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- DLR: ironpython2/Src/DLR/Src/Microsoft.Scripting.Metadata, for .NET 10 (see ../IronPython.Build.props). -->
+  <PropertyGroup>
+    <OctgnIronPythonComponent>Dlr</OctgnIronPythonComponent>
+  </PropertyGroup>
+  <Import Project="..\IronPython.Build.props" />
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Scripting.Metadata</AssemblyName>
+    <RootNamespace>Microsoft.Scripting.Metadata</RootNamespace>
+    <DefineConstants>$(DefineConstants);CCI</DefineConstants>
+    <OctgnSource>$(DlrRoot)Src\Microsoft.Scripting.Metadata\</OctgnSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(OctgnSource)**\*.cs" Exclude="$(OctgnSource)obj\**;$(OctgnSource)bin\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Scripting\Microsoft.Scripting.csproj" />
+  </ItemGroup>
+</Project>

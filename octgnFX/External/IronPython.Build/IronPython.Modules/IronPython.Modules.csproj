@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ironpython2/Src/IronPython.Modules, for .NET 10 (see ../IronPython.Build.props). -->
+  <PropertyGroup>
+    <OctgnIronPythonComponent>IronPython</OctgnIronPythonComponent>
+  </PropertyGroup>
+  <Import Project="..\IronPython.Build.props" />
+  <PropertyGroup>
+    <AssemblyName>IronPython.Modules</AssemblyName>
+    <RootNamespace>IronPython.Modules</RootNamespace>
+    <OctgnSource>$(IronPythonRoot)Src\IronPython.Modules\</OctgnSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(OctgnSource)**\*.cs" Exclude="$(OctgnSource)obj\**;$(OctgnSource)bin\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Mono.Unix" Version="7.1.0-final.1.21458.1" />
+  </ItemGroup>
+</Project>

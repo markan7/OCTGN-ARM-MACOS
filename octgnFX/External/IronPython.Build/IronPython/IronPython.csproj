@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ironpython2/Src/IronPython, for .NET 10 (see ../IronPython.Build.props). -->
+  <PropertyGroup>
+    <OctgnIronPythonComponent>IronPython</OctgnIronPythonComponent>
+  </PropertyGroup>
+  <Import Project="..\IronPython.Build.props" />
+  <PropertyGroup>
+    <AssemblyName>IronPython</AssemblyName>
+    <RootNamespace>IronPython</RootNamespace>
+    <OctgnSource>$(IronPythonRoot)Src\IronPython\</OctgnSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(OctgnSource)**\*.cs" Exclude="$(OctgnSource)obj\**;$(OctgnSource)bin\**" />
+    <!-- Names the code looks up (ResourceManager "IronPython.Resources", unicodedata). -->
+    <EmbeddedResource Include="$(OctgnSource)Resources.resx" Link="Resources.resx" LogicalName="IronPython.Resources.resources" />
+    <EmbeddedResource Include="$(OctgnSource)Modules\unicodedata\IPyUnicodeData.txt.gz" Link="Modules\unicodedata\IPyUnicodeData.txt.gz" LogicalName="IronPython.Modules.unicodedata.IPyUnicodeData.txt.gz" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Dynamic\Microsoft.Dynamic.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- POSIX calls (os.stat, uname...) on macOS and Linux. -->
+    <PackageReference Include="Mono.Unix" Version="7.1.0-final.1.21458.1" />
+  </ItemGroup>
+</Project>

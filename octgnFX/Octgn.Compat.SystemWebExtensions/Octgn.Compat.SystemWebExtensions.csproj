@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    .NET 10 stand-in for the .NET Framework assembly System.Web.Extensions, reduced to
+    System.Web.Script.Serialization.JavaScriptSerializer. Game scripts load it with
+    clr.AddReference('System.Web.Extensions') (for instance Marvel Champions, to read decks):
+    an application that references this project can resolve that name on macOS and Linux.
+    Not used on Windows, where .NET Framework provides the original.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>System.Web.Extensions</AssemblyName>
+    <RootNamespace>System.Web.Script.Serialization</RootNamespace>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="JavaScriptSerializer.cs" />
+  </ItemGroup>
+</Project>

@@ -26,6 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="Compat\JavaScriptSerializerTests.cs" />
     <Compile Include="Core\ColorTests.cs" />
     <Compile Include="Core\PackageRepositoryTests.cs" />
     <Compile Include="Library\HostedGameBroadcastSerializerTests.cs" />
@@ -34,6 +35,7 @@
     <EmbeddedResource Include="TestData\HostedGame.BinaryFormatter.bin" LogicalName="HostedGame.BinaryFormatter.bin" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Octgn.Compat.SystemWebExtensions\Octgn.Compat.SystemWebExtensions.csproj" />
     <ProjectReference Include="..\Octgn.Communication\Octgn.Communication\Octgn.Communication.csproj" />
     <ProjectReference Include="..\Octgn.Core\Octgn.Core.csproj" />
     <ProjectReference Include="..\Octgn.DataNew\Octgn.DataNew.csproj" />

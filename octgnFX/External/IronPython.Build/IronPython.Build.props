@@ -1,0 +1,69 @@
+<Project>
+  <!--
+    IronPython 2.7 for .NET 10, built from the ironpython2 sources (git submodule External/ironpython2),
+    for the cross-platform projects only. The Windows client keeps the IronPython 2.7.12 package.
+
+    Why not the IronPython 2.7.12 package: on .NET 9 and later, ICustomTypeDescriptor has new default
+    members, and IronPython 2.7.12 fails to create any Python class (NewTypeMaker.ImplementCTDOverride:
+    "Type doesn't have a method with a given name and signature"). The scripting API of OCTGN defines
+    classes, so no game script can run. ironpython2's master branch fixes it (NewTypeMaker skips the
+    non-abstract members) but no 2.7 release has it. The submodule is pinned to such a commit.
+
+    The settings repeat those of ironpython2 (Directory.Build.props, Build/netcoreapp3.1.props and
+    the DLR's), with net10.0 as the target: same assembly names, versions and strong-name key.
+    Import it, after setting OctgnIronPythonComponent to Dlr or IronPython, in the five projects
+    of this folder.
+  -->
+  <PropertyGroup>
+    <IronPythonRoot>$(MSBuildThisFileDirectory)..\ironpython2\</IronPythonRoot>
+    <DlrRoot>$(IronPythonRoot)Src\DLR\</DlrRoot>
+    <OctgnDotNetLibrariesVersion Condition="'$(OctgnDotNetLibrariesVersion)' == ''">10.0.0</OctgnDotNetLibrariesVersion>
+  </PropertyGroup>
+
+  <Import Project="$(DlrRoot)CurrentVersion.props" Condition="'$(OctgnIronPythonComponent)' == 'Dlr'" />
+  <Import Project="$(IronPythonRoot)CurrentVersion.props" Condition="'$(OctgnIronPythonComponent)' == 'IronPython'" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <IsPackable>false</IsPackable>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Upstream code: its warnings are not ours to fix. BinaryFormatter (SYSLIB0011) is only reached
+         when a script pickles .NET objects, and throws on .NET 10 as it would anywhere else. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);1591;1584;1574;1685;1573;618;429;219;1717;162;414;8981;SYSLIB0011;SYSLIB0050;SYSLIB0051;SYSLIB0003;SYSLIB0012;SYSLIB0014;SYSLIB0044;CA1416;CA2022</NoWarn>
+    <RunAnalyzers>false</RunAnalyzers>
+
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'alpha'">000$(ReleaseSerial)</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'beta'">00$(ReleaseSerial)0</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'candidate'">0$(ReleaseSerial)00</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'final'">1000</AssemblyFileRevision>
+    <AssemblyVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyRevision)</AssemblyVersion>
+    <FileVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</FileVersion>
+    <!-- IronPython reads its version from this text (IronPython.Runtime.CurrentVersion): keep its format. -->
+    <InformationalVersion>$(MSBuildProjectName) $(MajorVersion).$(MinorVersion).$(MicroVersion) $(ReleaseLevel) $(ReleaseSerial)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <Product Condition="'$(OctgnIronPythonComponent)' == 'Dlr'">Dynamic Language Runtime</Product>
+    <Company Condition="'$(OctgnIronPythonComponent)' == 'Dlr'">DLR Open Source Team</Company>
+    <Copyright Condition="'$(OctgnIronPythonComponent)' == 'Dlr'">© DLR Contributors</Copyright>
+    <Product Condition="'$(OctgnIronPythonComponent)' == 'IronPython'">IronPython</Product>
+    <Company Condition="'$(OctgnIronPythonComponent)' == 'IronPython'">IronPython Team</Company>
+    <Copyright Condition="'$(OctgnIronPythonComponent)' == 'IronPython'">© IronPython Contributors</Copyright>
+
+    <!-- Same key as the official assemblies (public key token 7f709c5b713576e1). -->
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile Condition="'$(OctgnIronPythonComponent)' == 'Dlr'">$(DlrRoot)Build\Key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition="'$(OctgnIronPythonComponent)' == 'IronPython'">$(IronPythonRoot)Build\Key.snk</AssemblyOriginatorKeyFile>
+
+    <!-- Build/netcoreapp3.1.props of the DLR and of IronPython. -->
+    <OctgnDlrFeatures>FEATURE_APARTMENTSTATE;FEATURE_APPLICATIONEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_ASSEMBLY_GETFORWARDEDTYPES;FEATURE_ASSEMBLY_LOCATION;FEATURE_ASSEMBLY_RESOLVE;FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY;FEATURE_BASIC_CONSOLE;FEATURE_CODEDOM;FEATURE_COM;FEATURE_CONFIGURATION;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_DBNULL;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_DYNAMIC_EXPRESSION_VISITOR;FEATURE_EXCEPTION_STATE;FEATURE_FILESYSTEM;FEATURE_FULL_CONSOLE;FEATURE_FULL_CRYPTO;FEATURE_FULL_NET;FEATURE_ICLONEABLE;FEATURE_LCG;FEATURE_LOADWITHPARTIALNAME;FEATURE_METADATA_READER;FEATURE_MMAP;FEATURE_NATIVE;FEATURE_OS_SERVICEPACK;FEATURE_PIPES;FEATURE_PROCESS;FEATURE_REFEMIT;FEATURE_REGISTRY;FEATURE_SECURITY_RULES;FEATURE_SERIALIZATION;FEATURE_SORTKEY;FEATURE_STACK_TRACE;FEATURE_SYNC_SOCKETS;FEATURE_THREAD;FEATURE_TYPE_EQUIVALENCE;FEATURE_TYPECONVERTER;FEATURE_WARNING_EXCEPTION;FEATURE_WIN32EXCEPTION;FEATURE_XMLDOC</OctgnDlrFeatures>
+    <OctgnIronPythonFeatures>FEATURE_APARTMENTSTATE;FEATURE_APPLICATIONEXCEPTION;FEATURE_ASSEMBLY_GETFORWARDEDTYPES;FEATURE_ASSEMBLY_LOCATION;FEATURE_ASSEMBLY_RESOLVE;FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY;FEATURE_BASIC_CONSOLE;FEATURE_CODEDOM;FEATURE_COM;FEATURE_CONFIGURATION;FEATURE_CTYPES;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_DBNULL;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_DYNAMIC_EXPRESSION_VISITOR;FEATURE_ENCODING;FEATURE_EXCEPTION_STATE;FEATURE_FILESYSTEM;FEATURE_FULL_CONSOLE;FEATURE_FULL_CRYPTO;FEATURE_FULL_NET;FEATURE_ICLONEABLE;FEATURE_LCG;FEATURE_LOADWITHPARTIALNAME;FEATURE_METADATA_READER;FEATURE_MMAP;FEATURE_NATIVE;FEATURE_OS_SERVICEPACK;FEATURE_PIPES;FEATURE_PROCESS;FEATURE_REFEMIT;FEATURE_REGISTRY;FEATURE_RUNTIMEINFORMATION;FEATURE_SECURITY_RULES;FEATURE_SERIALIZATION;FEATURE_SORTKEY;FEATURE_STACK_TRACE;FEATURE_SYNC_SOCKETS;FEATURE_THREAD;FEATURE_TYPE_EQUIVALENCE;FEATURE_TYPECONVERTER;FEATURE_WARNING_EXCEPTION;FEATURE_WIN32EXCEPTION;FEATURE_XMLDOC</OctgnIronPythonFeatures>
+    <DefineConstants Condition="'$(OctgnIronPythonComponent)' == 'Dlr'">$(DefineConstants);$(OctgnDlrFeatures);SIGNED</DefineConstants>
+    <DefineConstants Condition="'$(OctgnIronPythonComponent)' == 'IronPython'">$(DefineConstants);$(OctgnIronPythonFeatures);SIGNED</DefineConstants>
+  </PropertyGroup>
+</Project>
