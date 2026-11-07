@@ -5,7 +5,11 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 
+#if NETFRAMEWORK
 using NuGet;
+#else
+using Octgn.Core.Packaging;
+#endif
 
 using Octgn.Core.DataExtensionMethods;
 using Octgn.DataNew;
@@ -232,7 +236,7 @@ namespace Octgn.Core.DataManagers
                         try
                         {
                             Log.DebugFormat("Found plugin file {0} {1} {2}", f.FullName, package.Id, package.Title);
-                            var relPath = f.FullName.Replace(new DirectoryInfo(Path.Combine(game.InstallPath, "Plugins")).FullName, "").TrimStart('\\');
+                            var relPath = f.FullName.Replace(new DirectoryInfo(Path.Combine(game.InstallPath, "Plugins")).FullName, "").TrimStart('\\', '/');
                             var newPath = Path.Combine(Config.Instance.Paths.PluginPath, relPath);
                             Log.DebugFormat("Creating directories {0} {1} {2}", f.FullName, package.Id, package.Title);
                             if (new DirectoryInfo(newPath).Exists)
@@ -269,7 +273,7 @@ namespace Octgn.Core.DataManagers
                         try
                         {
                             Log.DebugFormat("Found deck file {0} {1} {2} {3}", deck.FullName, setsDir, package.Id,package.Title);
-                            var relPath = deck.FullName.Replace(set.DeckDirectory.FullName, "").TrimStart('\\');
+                            var relPath = deck.FullName.Replace(set.DeckDirectory.FullName, "").TrimStart('\\', '/');
                             var newPath = Path.Combine(Config.Instance.Paths.DeckPath, game.Name, relPath);
                             Log.DebugFormat("Creating directories {0} {1} {2} {3}", deck.FullName, setsDir, package.Id,package.Title);
                             Directory.CreateDirectory(new FileInfo(newPath).Directory.FullName);

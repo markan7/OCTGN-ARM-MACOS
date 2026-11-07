@@ -1,6 +1,10 @@
 ﻿namespace Octgn.Core.Play
 {
+#if NETFRAMEWORK
     using System.Windows.Media;
+#else
+    using Octgn.Core.Media;
+#endif
 
     public interface IPlayPlayer
     {

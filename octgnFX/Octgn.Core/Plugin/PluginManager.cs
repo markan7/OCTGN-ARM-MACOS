@@ -8,7 +8,9 @@ namespace Octgn.Library.Plugin
     using System.IO;
     using System.Linq;
     using System.IO.Abstractions;
+#if NETFRAMEWORK
     using System.Management.Instrumentation;
+#endif
     using System.Reflection;
 
     using log4net;
@@ -17,13 +19,17 @@ namespace Octgn.Library.Plugin
     {
         internal static ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         internal static IFileSystem FS { get; set; }
+#if NETFRAMEWORK
         internal static Dictionary<string, AppDomain> PluginDomains { get; set; }
+#endif
 
         static PluginManager()
         {
             if (FS == null)
                 FS = new FileSystem();
+#if NETFRAMEWORK
             PluginDomains = new Dictionary<string, AppDomain>();
+#endif
         }
 
         internal static IQueryable<T> GetPlugins<T>()
@@ -57,14 +63,22 @@ namespace Octgn.Library.Plugin
             var assTypes = loadedHotAss.GetTypesSafe();
             foreach (var t in assTypes.Where(t => t.GetInterfaces().Any(i => i == typeof(T))))
                 return (T)Activator.CreateInstance(t);
-            throw new InstanceNotFoundException(String.Format("Instance of the plugin type {0} was not found in the file {1}", typeof(T).Name, path));
+            var message = String.Format("Instance of the plugin type {0} was not found in the file {1}", typeof(T).Name, path);
+#if NETFRAMEWORK
+            throw new InstanceNotFoundException(message);
+#else
+            throw new TypeLoadException(message);
+#endif
         }
 
+#if NETFRAMEWORK
+        // Application domains only exist on .NET Framework.
         internal static AppDomain GetOrCreate(string path)
         {
             if (!PluginDomains.ContainsKey(path))
                 PluginDomains[path] = AppDomain.CreateDomain(Guid.NewGuid().ToString());
             return PluginDomains[path];
         }
+#endif
     }
 }

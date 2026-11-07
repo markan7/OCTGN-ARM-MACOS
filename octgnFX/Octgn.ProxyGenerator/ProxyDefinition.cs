@@ -1,12 +1,16 @@
 ﻿namespace Octgn.ProxyGenerator
 {
     using System.Collections.Generic;
-    using System.Drawing;
     using System.IO;
     using System.Xml;
 
     using Octgn.ProxyGenerator.Definitions;
+#if NETFRAMEWORK
+    using System.Drawing;
     using System.Drawing.Imaging;
+#else
+    using Octgn.ProxyGenerator.Rendering;
+#endif
 
     public class ProxyDefinition
     {
@@ -28,6 +32,7 @@
             Load(rootPath, path);
         }
 
+#if NETFRAMEWORK
         public Image GenerateProxyImage(Dictionary<string, string> values)
         {
             TemplateDefinition cardDef = TemplateSelector.GetTemplate(values);
@@ -61,6 +66,20 @@
             proxy.Save(path, ImageFormat.Png);
             proxy.Dispose();
         }
+#else
+        // No GDI+ outside Windows: rendering goes through the registered IProxyRenderer.
+        public bool SaveProxyImage(Dictionary<string, string> values, string path)
+        {
+            return SaveProxyImage(values, path, null);
+        }
+
+        public bool SaveProxyImage(Dictionary<string, string> values, string path, string specialPath)
+        {
+            TemplateDefinition cardDef = TemplateSelector.GetTemplate(values);
+            ProxyRendering.GetRenderer().RenderToPng(BlockManager, cardDef, values, specialPath, path);
+            return (File.Exists(path));
+        }
+#endif
 
         internal void Load(string rootPath, string path)
         {

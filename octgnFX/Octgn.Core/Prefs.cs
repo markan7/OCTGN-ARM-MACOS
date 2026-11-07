@@ -6,7 +6,9 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.IO;
+#if NETFRAMEWORK
 using System.Windows;
+#endif
 using Octgn.Core.Util;
 using Octgn.Library;
 
@@ -224,6 +226,8 @@ namespace Octgn.Core
             }
         }
 
+#if NETFRAMEWORK
+        // Window positions of the WPF client (System.Windows.Point/Rect).
         public static Point LoginLocation
         {
             get
@@ -285,6 +289,7 @@ namespace Octgn.Core
                 Config.Instance.WriteValue("ChatWindowLoc", value.ToString(CultureInfo.InvariantCulture));
             }
         }
+#endif
 
         public static int LoginTimeout
         {

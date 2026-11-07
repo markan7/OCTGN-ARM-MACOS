@@ -1,0 +1,47 @@
+<Project>
+  <!--
+    Shared settings for the OCTGN libraries that build both for .NET Framework 4.7
+    (the Windows client, unchanged) and for .NET 10 (the cross-platform port: macOS, Linux).
+
+    Import it at the top of an SDK-style project:
+      <Import Project="..\Octgn.MultiTarget.props" />
+
+    Targets:
+    * net47 is built on Windows (OctgnBuildFramework=true elsewhere to build it too).
+    * net10.0 is built when the .NET SDK in use can build it (SDK 10 or later), so a Windows
+      machine with an older SDK builds exactly what it built before the conversion.
+      OctgnBuildModern=false turns it off.
+    The net47 output keeps the legacy layout (bin\$(Configuration)\), so post-build steps,
+    relative paths and project references from the WPF projects keep working; the net10.0
+    output goes to bin\$(Configuration)\net10.0\.
+    Items are listed explicitly (no globbing), as in the legacy project files.
+    In the code, '#if NETFRAMEWORK' marks what stays specific to the Windows (WPF) client.
+  -->
+  <PropertyGroup>
+    <OctgnFrameworkTarget Condition="'$(OctgnFrameworkTarget)' == ''">net47</OctgnFrameworkTarget>
+    <OctgnModernTarget Condition="'$(OctgnModernTarget)' == ''">net10.0</OctgnModernTarget>
+    <OctgnBuildFramework Condition="'$(OctgnBuildFramework)' == '' and '$(OS)' == 'Windows_NT'">true</OctgnBuildFramework>
+    <OctgnBuildModern Condition="'$(OctgnBuildModern)' == '' and '$(BundledNETCoreAppTargetFrameworkVersion)' != '' and $([MSBuild]::VersionGreaterThanOrEquals('$(BundledNETCoreAppTargetFrameworkVersion)', '10.0'))">true</OctgnBuildModern>
+    <!-- Nothing selected (older SDK outside Windows): fall back to the legacy target. -->
+    <OctgnBuildFramework Condition="'$(OctgnBuildFramework)' != 'true' and '$(OctgnBuildModern)' != 'true'">true</OctgnBuildFramework>
+
+    <TargetFrameworks Condition="'$(OctgnBuildFramework)' == 'true' and '$(OctgnBuildModern)' == 'true'">$(OctgnFrameworkTarget);$(OctgnModernTarget)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OctgnBuildFramework)' == 'true' and '$(OctgnBuildModern)' != 'true'">$(OctgnFrameworkTarget)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OctgnBuildFramework)' != 'true' and '$(OctgnBuildModern)' == 'true'">$(OctgnModernTarget)</TargetFrameworks>
+
+    <Configurations>Debug;Release</Configurations>
+    <Platforms>AnyCPU;x86</Platforms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <SolutionDir Condition="'$(SolutionDir)' == '' Or '$(SolutionDir)' == '*Undefined*'">$(MSBuildThisFileDirectory)..\</SolutionDir>
+
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(TargetFramework)' == '$(OctgnFrameworkTarget)'">false</AppendTargetFrameworkToOutputPath>
+    <!-- Legacy consumers (packages.config) pick up dependencies from the referenced project's bin folder. -->
+    <CopyLocalLockFileAssemblies Condition="'$(TargetFramework)' == '$(OctgnFrameworkTarget)'">true</CopyLocalLockFileAssemblies>
+
+    <!-- Versions shared by several projects. They can be overridden from the command line. -->
+    <OctgnDotNetLibrariesVersion Condition="'$(OctgnDotNetLibrariesVersion)' == ''">10.0.0</OctgnDotNetLibrariesVersion>
+    <OctgnNuGetClientVersion Condition="'$(OctgnNuGetClientVersion)' == ''">6.14.0</OctgnNuGetClientVersion>
+  </PropertyGroup>
+</Project>

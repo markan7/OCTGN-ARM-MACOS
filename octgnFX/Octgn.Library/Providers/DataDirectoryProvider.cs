@@ -21,6 +21,14 @@ namespace Octgn.Library.Providers
 
         public DataDirectoryProvider() {
             _rootDirectory = Path.GetDirectoryName(typeof(Config).Assembly.Location);
+#if !NETFRAMEWORK
+            // Outside Windows the install folder is read-only (and signed, for a macOS .app bundle):
+            // data.path and the default Data folder go to the user's application data folder.
+            if (!OperatingSystem.IsWindows()) {
+                _rootDirectory = UserApplicationDataDirectory();
+                Directory.CreateDirectory(_rootDirectory);
+            }
+#endif
 
             _dataPathFile = Path.Combine(_rootDirectory, "data.path");
 
@@ -73,6 +81,19 @@ namespace Octgn.Library.Providers
 
 
         public const string OCTGNDATA_ENVIRONMENTALVARIABLE = "OCTGN_DATA";
+
+#if !NETFRAMEWORK
+        /// <summary>~/Library/Application Support/OCTGN on macOS, $XDG_DATA_HOME/OCTGN (~/.local/share/OCTGN) elsewhere.</summary>
+        public static string UserApplicationDataDirectory() {
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (OperatingSystem.IsMacOS())
+                return Path.Combine(home, "Library", "Application Support", "OCTGN");
+            var dataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+            if (string.IsNullOrWhiteSpace(dataHome) || !Path.IsPathRooted(dataHome))
+                dataHome = Path.Combine(home, ".local", "share");
+            return Path.Combine(dataHome, "OCTGN");
+        }
+#endif
 
         private bool GetDataDirectoryFromEnvironment(ref string dataDirectory) {
             dataDirectory = Environment.GetEnvironmentVariable(OCTGNDATA_ENVIRONMENTALVARIABLE, EnvironmentVariableTarget.Process);

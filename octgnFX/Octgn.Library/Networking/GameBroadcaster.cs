@@ -87,19 +87,12 @@ namespace Octgn.Library.Networking
 
                 game.ProcessId = Process.GetCurrentProcess().Id;
 
-                using (var ms = new MemoryStream()) {
-                    var ser = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                    ser.Serialize(ms, game);
-                    ms.Flush();
+                var bytes = HostedGameBroadcastSerializer.Serialize(game);
+                var mess = new List<byte>();
+                mess.AddRange(BitConverter.GetBytes((Int32)bytes.Length));
+                mess.AddRange(bytes);
 
-                    ms.Position = 0;
-                    var bytes = ms.ToArray();
-                    var mess = new List<byte>();
-                    mess.AddRange(BitConverter.GetBytes((Int32)bytes.Length));
-                    mess.AddRange(bytes);
-
-                    this.Client.Send(mess.ToArray(), mess.Count, new IPEndPoint(MulticastAddress, BroadcastPort));
-                }
+                this.Client.Send(mess.ToArray(), mess.Count, new IPEndPoint(MulticastAddress, BroadcastPort));
             } catch (Exception ex) {
                 Log.Error($"{nameof(SendTimerOnElapsed)}", ex);
             }

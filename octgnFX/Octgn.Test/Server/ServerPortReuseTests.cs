@@ -32,6 +32,14 @@ namespace Octgn.Test.Server
             _owners.Clear();
         }
 
+        // TcpListener.Server would recreate socket options on .NET 10: read the field instead.
+        private static Socket ServerSocket(TcpListener listener)
+        {
+            var field = typeof(TcpListener).GetField("_serverSocket", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? typeof(TcpListener).GetField("m_ServerSocket", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (Socket)field.GetValue(listener);
+        }
+
         private static TcpListener Listener(Octgn.Server.Server server)
         {
             return (TcpListener)typeof(Octgn.Server.Server)
@@ -160,9 +168,9 @@ namespace Octgn.Test.Server
             var port = FreePort();
             var server = CreateServer(port);
             var listener = Listener(server);
-            var socket = listener.Server;
+            var socket = ServerSocket(listener);
             listener.Start(); // Same call that Server.Start makes before accepting.
-            Assert.AreSame(socket, listener.Server);
+            Assert.AreSame(socket, ServerSocket(listener));
             Assert.AreEqual(port, ((IPEndPoint)listener.LocalEndpoint).Port);
             Assert.IsTrue(listener.ExclusiveAddressUse);
         }
@@ -250,6 +258,10 @@ namespace Octgn.Test.Server
         public void Server_DefaultBehavior_UsesOriginalTcpListener()
         {
             var server = CreateServer(FreePort(), false);
+#if NETCOREAPP
+            if (!OperatingSystem.IsWindows())
+                Assert.Ignore("Exclusive use and SO_REUSEADDR are the same socket option outside Windows.");
+#endif
             Assert.IsFalse(Listener(server).ExclusiveAddressUse);
             Assert.AreEqual(0, (int)Listener(server).Server.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress));
         }

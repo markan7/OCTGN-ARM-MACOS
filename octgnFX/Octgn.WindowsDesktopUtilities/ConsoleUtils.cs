@@ -10,7 +10,14 @@ namespace Octgn.WindowsDesktopUtilities
 
         [DllImport("kernel32.dll")]
         static extern IntPtr GetConsoleWindow();
+#if NETFRAMEWORK
         public static bool IsConsoleWindowVisible => GetConsoleWindow() != IntPtr.Zero;
+#else
+        // kernel32 only exists on Windows. Elsewhere, an interactive terminal plays the same role.
+        public static bool IsConsoleWindowVisible => OperatingSystem.IsWindows()
+            ? GetConsoleWindow() != IntPtr.Zero
+            : !Console.IsInputRedirected;
+#endif
 
         /// <summary>
         /// Try and wait for a key from the console. If the application is in a state where it

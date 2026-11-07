@@ -6,7 +6,11 @@
     using System.Linq;
     using System.Threading;
     using System.Timers;
+#if NETFRAMEWORK
     using System.Windows.Media;
+#else
+    using Octgn.Core.Media;
+#endif
 
     public class GameMessageDispatcher : INotifyPropertyChanged
     {

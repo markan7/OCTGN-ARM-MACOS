@@ -9,7 +9,7 @@ namespace Octgn.Library
         public static string FileName = "Password.dat";
         public static void SavePassword(string pass)
         {
-            var path = Config.Instance.Paths.ConfigDirectory + "\\" + FileName;
+            var path = Path.Combine(Config.Instance.Paths.ConfigDirectory, FileName);
             _locker.EnterWriteLock();
             try
             {
@@ -23,7 +23,7 @@ namespace Octgn.Library
 
         public static string GetPassword()
         {
-            var path = Config.Instance.Paths.ConfigDirectory + "\\" + FileName;
+            var path = Path.Combine(Config.Instance.Paths.ConfigDirectory, FileName);
             _locker.EnterReadLock();
             try
             {

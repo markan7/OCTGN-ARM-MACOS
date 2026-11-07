@@ -17,7 +17,9 @@ using Octgn.Library.Exceptions;
 
 using log4net;
 using Octgn.Library.Localization;
+#if NETFRAMEWORK
 using System.Windows.Media.Imaging;
+#endif
 
 namespace Octgn.Core.DataExtensionMethods
 {

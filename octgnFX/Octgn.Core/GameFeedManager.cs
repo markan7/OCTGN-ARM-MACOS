@@ -9,7 +9,11 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 
+#if NETFRAMEWORK
 using NuGet;
+#else
+using Octgn.Core.Packaging;
+#endif
 
 using Octgn.Library;
 using Octgn.Library.Exceptions;
@@ -59,7 +63,11 @@ namespace Octgn.Core
                 if( SingletonContext != null )
                     throw new InvalidOperationException( "Game feed manager already exists!" );
                 SingletonContext = this;
+#if NETFRAMEWORK
                 NuGet.HttpClient.DefaultCredentialProvider = new OctgnFeedCredentialProvider();
+#else
+                PackageRepositoryFactory.CredentialProvider = OctgnFeedCredentialProvider.FindCredentials;
+#endif
             }
         }
         #endregion Singleton
@@ -402,10 +410,15 @@ namespace Octgn.Core
                     }
                     Log.InfoFormat( "Queried feed {0}, feed is valid", feed );
                     return FeedValidationResult.Valid;
+#if !NETFRAMEWORK
+                } catch( FeedAuthenticationRequiredException ) {
+                    return FeedValidationResult.RequiresAuthentication;
+#endif
                 } catch( WebException e ) {
-                    if( (e.Response as HttpWebResponse).StatusCode == HttpStatusCode.Unauthorized )
+                    // Response is null when the request never got an answer (DNS, connection, TLS...).
+                    if( (e.Response as HttpWebResponse)?.StatusCode == HttpStatusCode.Unauthorized )
                         return FeedValidationResult.RequiresAuthentication;
-                    Log.WarnFormat( "{0} is an invalid feed. StatusCode={1}", feed, (e.Response as HttpWebResponse).StatusCode );
+                    Log.WarnFormat( "{0} is an invalid feed. StatusCode={1}", feed, (e.Response as HttpWebResponse)?.StatusCode );
                 } catch( Exception ) {
                     Log.WarnFormat( "{0} is an invalid feed.", feed );
                 }
@@ -438,7 +451,10 @@ namespace Octgn.Core
         Valid, InvalidFormat, InvalidUrl, RequiresAuthentication, Unknown
     }
 
-    public class OctgnFeedCredentialProvider : ICredentialProvider
+    public class OctgnFeedCredentialProvider
+#if NETFRAMEWORK
+        : ICredentialProvider
+#endif
     {
         protected static Dictionary<string, NetworkCredential> TempCredentials = new Dictionary<string, NetworkCredential>( StringComparer.InvariantCultureIgnoreCase );
 
@@ -454,6 +470,7 @@ namespace Octgn.Core
             }
         }
 
+#if NETFRAMEWORK
         public ICredentials GetCredentials( Uri uri, IWebProxy proxy, CredentialType credentialType, bool retrying ) {
             if( retrying )
                 return null;
@@ -461,6 +478,14 @@ namespace Octgn.Core
             if( credentialType == CredentialType.ProxyCredentials )
                 return null;
 
+            return FindCredentials( uri );
+        }
+#endif
+
+        /// <summary>
+        /// Credentials for a feed: the temporary ones given while validating it, otherwise the saved ones.
+        /// </summary>
+        public static NetworkCredential FindCredentials( Uri uri ) {
             NetworkCredential ret = null;
             if( TempCredentials.TryGetValue( uri.ToString(), out ret ) ) {
                 TempCredentials.Remove( uri.ToString() );

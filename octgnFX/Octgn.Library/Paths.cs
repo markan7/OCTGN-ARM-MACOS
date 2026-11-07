@@ -51,7 +51,7 @@ namespace Octgn.Library
 
             WorkingDirectory = workingDirectory;
 
-            BasePath = FS.Path.GetDirectoryName(WorkingDirectory) + "\\";
+            BasePath = FS.Path.GetDirectoryName(WorkingDirectory) + FS.Path.DirectorySeparatorChar;
             DataDirectory = dataDirectory;
             PluginPath = FS.Path.Combine(DataDirectory, "Plugins");
             DatabasePath = FS.Path.Combine(DataDirectory, "GameDatabase");

@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.Caching;
-using System.Runtime.Serialization.Formatters.Binary;
 using log4net;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
@@ -121,23 +120,19 @@ namespace Octgn.Library.Networking
             data = data.Skip(4).ToArray();
 
             try {
-                using (var ms = new MemoryStream(data)) {
-                    ms.Position = 0;
-                    var bf = new BinaryFormatter();
-                    var hg = (HostedGame)bf.Deserialize(ms);
+                var hg = HostedGameBroadcastSerializer.Deserialize(data);
 
-                    if(hg.Host == "0.0.0.0") {
-                        hg.HostAddress = $"{ep.Address}:{hg.Port}";
-                    }
+                if(hg.Host == "0.0.0.0") {
+                    hg.HostAddress = $"{ep.Address}:{hg.Port}";
+                }
 
-                    lock (GameCache) {
-                        if (GameCache.Contains(hg.Id.ToString()))
-                            GameCache.Remove(hg.Id.ToString());
-                        GameCache.Add(hg.Id.ToString(), hg, DateTime.Now.AddSeconds(10));
+                lock (GameCache) {
+                    if (GameCache.Contains(hg.Id.ToString()))
+                        GameCache.Remove(hg.Id.ToString());
+                    GameCache.Add(hg.Id.ToString(), hg, DateTime.Now.AddSeconds(10));
 
-                        if (_awaitingStart.TryGetValue(hg.Id, out var tcs)) {
-                            tcs.SetResult(hg);
-                        }
+                    if (_awaitingStart.TryGetValue(hg.Id, out var tcs)) {
+                        tcs.SetResult(hg);
                     }
                 }
             } catch (Exception ex) {

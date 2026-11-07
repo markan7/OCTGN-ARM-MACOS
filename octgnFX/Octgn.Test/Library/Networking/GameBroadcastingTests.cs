@@ -17,7 +17,9 @@ namespace Octgn.Test.Library.Networking
         public async Task Test() {
             var game = new HostedGame() {
                 Id = Guid.NewGuid(),
-                HostUser = new User("id", "name")
+                HostUser = new User("id", "name"),
+                // The listener reads Host, which requires an address.
+                HostAddress = "0.0.0.0:9999"
             };
             using(var broadcaster = new GameBroadcaster(game, 3456)) {
                 using(var listener = new GameBroadcastListener(3456)) {

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Tests of the libraries on .NET 10 (macOS, Linux, Windows). They run with NUnitLite:
+    "dotnet run" in this folder (NUnitLite options after a lone double dash).
+    The library tests of Octgn.Test that do not need the WPF engine are compiled here too.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Octgn.Test</RootNamespace>
+    <AssemblyName>Octgn.Test.CrossPlatform</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Octgn.Test\Library\ConfigFileSaveTests.cs" Link="Shared\Library\ConfigFileSaveTests.cs" />
+    <Compile Include="..\Octgn.Test\Library\XFileOpenTests.cs" Link="Shared\Library\XFileOpenTests.cs" />
+    <Compile Include="..\Octgn.Test\Library\Networking\GameBroadcastingTests.cs" Link="Shared\Library\Networking\GameBroadcastingTests.cs" />
+    <Compile Include="..\Octgn.Test\Server\GameStatusResetTests.cs" Link="Shared\Server\GameStatusResetTests.cs" />
+    <Compile Include="..\Octgn.Test\Server\HostedGameProcessTests.cs" Link="Shared\Server\HostedGameProcessTests.cs" />
+    <Compile Include="..\Octgn.Test\Server\ServerPortReuseTests.cs" Link="Shared\Server\ServerPortReuseTests.cs" />
+    <Compile Include="..\Octgn.Test\Server\ServerShutdownTests.cs" Link="Shared\Server\ServerShutdownTests.cs" />
+    <Compile Include="..\Octgn.Test\PlayGround.cs" Link="Shared\PlayGround.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Core\ColorTests.cs" />
+    <Compile Include="Core\PackageRepositoryTests.cs" />
+    <Compile Include="Library\HostedGameBroadcastSerializerTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TestData\HostedGame.BinaryFormatter.bin" LogicalName="HostedGame.BinaryFormatter.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Octgn.Communication\Octgn.Communication\Octgn.Communication.csproj" />
+    <ProjectReference Include="..\Octgn.Core\Octgn.Core.csproj" />
+    <ProjectReference Include="..\Octgn.DataNew\Octgn.DataNew.csproj" />
+    <ProjectReference Include="..\Octgn.Library\Octgn.Library.csproj" />
+    <ProjectReference Include="..\Octgn.Online\Octgn.Online.csproj" />
+    <ProjectReference Include="..\Octgn.Server\Octgn.Server.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnitLite" Version="3.13.3" />
+  </ItemGroup>
+</Project>

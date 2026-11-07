@@ -29,7 +29,8 @@ namespace Octgn.Online.StandAloneServer
         internal static int BroadcastPort = 21234;
         private static string ReadyPipe;
 
-        private static Config _config;
+        // Qualified: Octgn.Library.Config is also visible through the transitive project references.
+        private static Octgn.Server.Config _config;
         static void Main(string[] args) {
             bool waitForKeyOnExit = false;
 
@@ -41,7 +42,7 @@ namespace Octgn.Online.StandAloneServer
 
                 HandleArguments(IsDebug, args);
 
-                _config = new Config();
+                _config = new Octgn.Server.Config();
                 _config.IsLocal = Local;
                 _config.IsDebug = IsDebug;
                 _config.ApiKey = ConfigurationManager.AppSettings["SiteApiKey"];
