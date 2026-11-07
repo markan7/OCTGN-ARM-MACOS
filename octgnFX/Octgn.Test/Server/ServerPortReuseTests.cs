@@ -105,6 +105,10 @@ namespace Octgn.Test.Server
         [Test]
         public void Server_OwnsPreferredPortFromConstructionUntilDispose()
         {
+#if NETCOREAPP
+            if (OperatingSystem.IsMacOS())
+                Assert.Ignore("BSD sockets let a listener on 127.0.0.1 with SO_REUSEADDR share the port of one on 0.0.0.0, and macOS has no exclusive address use.");
+#endif
             var port = FreePort();
             var server = CreateServer(port);
             var listener = Listener(server);

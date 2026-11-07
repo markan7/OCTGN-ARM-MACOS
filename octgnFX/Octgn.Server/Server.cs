@@ -36,6 +36,10 @@ namespace Octgn.Server
             for (int attempt = 0; attempt < maxPortAttempts && currentPort <= IPEndPoint.MaxPort; attempt++) {
                 TcpListener listener = null;
                 try {
+#if !NETFRAMEWORK
+                    if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD())
+                        EnsureLoopbackPortIsFree(currentPort);
+#endif
                     var endpoint = new IPEndPoint(IPAddress.Any, currentPort);
                     listener = new TcpListener(endpoint);
                     
@@ -69,6 +73,20 @@ namespace Octgn.Server
             
             throw new InvalidOperationException($"Could not find an available port after trying {maxPortAttempts} ports starting from {preferredPort}");
         }
+
+#if !NETFRAMEWORK
+        /// <summary>
+        /// BSD sockets (macOS) let a listener on 0.0.0.0 share its port with another program's listener
+        /// on 127.0.0.1, which then gets the local players' connections. Binding 127.0.0.1 without address
+        /// reuse fails (AddressAlreadyInUse) when anything listens on that port, on 127.0.0.1 or 0.0.0.0.
+        /// </summary>
+        private static void EnsureLoopbackPortIsFree(int port) {
+            using (var probe = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)) {
+                probe.ExclusiveAddressUse = true;
+                probe.Bind(new IPEndPoint(IPAddress.Loopback, port));
+            }
+        }
+#endif
 
         public Server(Config config, HostedGame game, int broadcastPort, bool local_server = false) {
             Context = new GameContext(game, config);

@@ -15,6 +15,10 @@ namespace Octgn.Test.Library.Networking
     {
         [TestCase]
         public async Task Test() {
+#if NETCOREAPP
+            if (OperatingSystem.IsMacOS() && !CanSendMulticast(3456))
+                Assert.Ignore("macOS denies this process the local network (Local Network privacy): multicast sends fail with 'No route to host'.");
+#endif
             var game = new HostedGame() {
                 Id = Guid.NewGuid(),
                 HostUser = new User("id", "name"),
@@ -33,5 +37,18 @@ namespace Octgn.Test.Library.Networking
                 }
             }
         }
+
+#if NETCOREAPP
+        private static bool CanSendMulticast(int port) {
+            using (var probe = new System.Net.Sockets.UdpClient()) {
+                try {
+                    probe.Send(new byte[] { 0 }, 1, new System.Net.IPEndPoint(GameBroadcaster.MulticastAddress, port));
+                    return true;
+                } catch (System.Net.Sockets.SocketException e) when (e.SocketErrorCode == System.Net.Sockets.SocketError.HostUnreachable) {
+                    return false;
+                }
+            }
+        }
+#endif
     }
 }

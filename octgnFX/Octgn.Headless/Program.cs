@@ -34,6 +34,7 @@ namespace Octgn.Headless
         private const int BroadcastPort = 21299; // Not the client's port (21234): real clients on the LAN ignore it.
 
         private static readonly List<(string Step, bool Ok, string Detail)> Results = new List<(string, bool, string)>();
+        private static readonly List<(string Step, string Reason)> Skipped = new List<(string, string)>();
         private static ScriptEngine _engine;
         private static ScriptScope _scope;
         private static bool _verbose;
@@ -68,7 +69,12 @@ namespace Octgn.Headless
                     hosted = await StepAsync("Local server", () => Host(game));
                     if (hosted == null) return Finish(work, keep);
 
-                    await StepAsync("LAN discovery", async () => {
+                    if (OperatingSystem.IsMacOS() && !CanSendMulticast()) {
+                        // Local Network privacy (macOS 15 and later): a process that may not use the local
+                        // network gets "No route to host" for its multicast sends. The client app asks the
+                        // user (NSLocalNetworkUsageDescription); a terminal asks for itself.
+                        Skip("LAN discovery", "macOS denies this process the local network (Local Network privacy)");
+                    } else await StepAsync("LAN discovery", async () => {
                         var seen = await listener.WaitForGame(hosted.Id);
                         return $"broadcast received for \"{seen.Name}\" at {seen.HostAddress} (MS-NRBF payload, no BinaryFormatter)";
                     });
@@ -247,6 +253,17 @@ namespace Octgn.Headless
             return string.Join("; ", done) + $" (player {player}, piles: {piles})";
         }
 
+        private static bool CanSendMulticast() {
+            using (var probe = new UdpClient()) {
+                try {
+                    probe.Send(new byte[] { 0 }, 1, new IPEndPoint(GameBroadcaster.MulticastAddress, BroadcastPort));
+                    return true;
+                } catch (SocketException e) when (e.SocketErrorCode == SocketError.HostUnreachable) {
+                    return false;
+                }
+            }
+        }
+
         private static int FreeTcpPort() {
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
@@ -310,6 +327,11 @@ namespace Octgn.Headless
             return inner.GetType().Name + ": " + inner.Message;
         }
 
+        private static void Skip(string step, string reason) {
+            Skipped.Add((step, reason));
+            Console.WriteLine($"==> [SKIPPED] {step}: {reason}");
+        }
+
         private static void Record(string step, bool ok, string detail) {
             Results.Add((step, ok, detail));
             Console.WriteLine($"==> [{(ok ? "OK" : "FAILED")}] {step}: {detail}");
@@ -318,7 +340,9 @@ namespace Octgn.Headless
         private static int Finish(string work, bool keep) {
             Console.WriteLine();
             foreach (var (step, ok, _) in Results)
-                Console.WriteLine($"  {(ok ? "OK    " : "FAILED")} {step}");
+                Console.WriteLine($"  {(ok ? "OK     " : "FAILED ")} {step}");
+            foreach (var (step, reason) in Skipped)
+                Console.WriteLine($"  SKIPPED {step} ({reason})");
             if (keep) Console.WriteLine("Files kept in " + work);
             else try { Directory.Delete(work, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
             var success = Results.Count > 0 && Results.All(r => r.Ok);
