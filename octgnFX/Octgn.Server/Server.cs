@@ -192,8 +192,11 @@ namespace Octgn.Server
                 }
                 if (client != null) {
                     Log.InfoFormat("New Connection {0}", client.Client.RemoteEndPoint);
-                    var sc = new ServerSocket(client, this);
+                    var sc = new ServerSocket(client, this, startReceiving: false);
                     Context.State.Players.AddClient(sc);
+                    // Only now: the player listens to the socket, so a Hello sent right after
+                    // the connection is not lost.
+                    sc.StartReceiving();
                     return;
                 }
                 throw new NotImplementedException();

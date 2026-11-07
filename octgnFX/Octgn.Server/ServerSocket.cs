@@ -17,10 +17,13 @@ namespace Octgn.Server
         public BinaryParser Serializer { get; }
         public Handler Handler { get; }
 
-        public ServerSocket(TcpClient client, Server server)
+        /// <param name="startReceiving">
+        /// False to call <see cref="SocketBase.StartReceiving"/> once the player is attached to the socket.
+        /// </param>
+        public ServerSocket(TcpClient client, Server server, bool startReceiving = true)
         {
             client.Client.SendTimeout = 4000;
-            this.Setup(client,new ServerMessageProcessor());
+            this.Setup(client,new ServerMessageProcessor(), startReceiving);
             Server = server;
             LastPingTime = DateTime.Now;
 

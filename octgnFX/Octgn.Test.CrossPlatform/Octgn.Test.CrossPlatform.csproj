@@ -20,6 +20,7 @@
     <Compile Include="..\Octgn.Test\Server\GameStatusResetTests.cs" Link="Shared\Server\GameStatusResetTests.cs" />
     <Compile Include="..\Octgn.Test\Server\HostedGameProcessTests.cs" Link="Shared\Server\HostedGameProcessTests.cs" />
     <Compile Include="..\Octgn.Test\Server\ServerPortReuseTests.cs" Link="Shared\Server\ServerPortReuseTests.cs" />
+    <Compile Include="..\Octgn.Test\Server\ServerHelloRaceTests.cs" Link="Shared\Server\ServerHelloRaceTests.cs" />
     <Compile Include="..\Octgn.Test\Server\ServerShutdownTests.cs" Link="Shared\Server\ServerShutdownTests.cs" />
     <Compile Include="..\Octgn.Test\PlayGround.cs" Link="Shared\PlayGround.cs" />
   </ItemGroup>

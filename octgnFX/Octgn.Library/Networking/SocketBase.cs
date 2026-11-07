@@ -45,6 +45,16 @@ namespace Octgn.Library.Networking
 
         public void Setup(TcpClient client, ISocketMessageProcessor processor)
         {
+            Setup(client, processor, true);
+        }
+
+        /// <param name="startReceiving">
+        /// False to start reading with <see cref="StartReceiving"/> once every <see cref="DataReceived"/>
+        /// handler is attached. Otherwise a message sent right after the connection (a client's Hello)
+        /// can be raised before anyone listens, and is lost.
+        /// </param>
+        public void Setup(TcpClient client, ISocketMessageProcessor processor, bool startReceiving)
+        {
             lock (this)
             {
                 if(client == null)throw new ArgumentNullException("client");
@@ -58,6 +68,15 @@ namespace Octgn.Library.Networking
             }
             this.CallOnConnectionEvent(this.FirstConnection ? SocketConnectionEvent.Connected : SocketConnectionEvent.Reconnected);
             this.FirstConnection = false;
+            if (startReceiving) StartReceiving();
+        }
+
+        /// <summary>
+        /// Starts reading a socket set up with <see cref="Setup(TcpClient, ISocketMessageProcessor, bool)"/>
+        /// and startReceiving false.
+        /// </summary>
+        public void StartReceiving()
+        {
             var bundle = new SocketReceiveBundle(this.Client);
             this.Client.Client.BeginReceive(
                 bundle.Buffer,
