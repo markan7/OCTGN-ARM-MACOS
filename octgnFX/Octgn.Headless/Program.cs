@@ -34,6 +34,8 @@ namespace Octgn.Headless
         private const int BroadcastPort = 21299; // Not the client's port (21234): real clients on the LAN ignore it.
 
         private static readonly List<(string Step, bool Ok, string Detail)> Results = new List<(string, bool, string)>();
+        private static ScriptEngine _engine;
+        private static ScriptScope _scope;
         private static bool _verbose;
 
         public static async Task<int> Main(string[] args) {
@@ -88,6 +90,15 @@ namespace Octgn.Headless
                         text => Console.WriteLine("    notify: " + text));
 
                     Step("Scripts", () => RunScripts(game, api));
+
+                    // IronPython's os functions call the C library through Mono.Unix (a native library) on
+                    // macOS and Linux: os.stat is what os.path.exists and os.path.isfile use.
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _scope != null) Step("POSIX calls", () => {
+                        var mode = _engine.Execute<int>("import posix\nposix.stat(_wd).st_mode", _scope);
+                        var system = _engine.Execute<string>("posix.uname()[0]", _scope);
+                        if ((mode & 0x4000) == 0) throw new InvalidOperationException($"posix.stat: mode {mode:x} is not a directory");
+                        return $"posix.stat (mode 0o{Convert.ToString(mode, 8)}) and posix.uname ({system}) through Mono.Unix";
+                    });
 
                     if (api.GlobalVariablesSent.Count > 0) Step("Global variables", () => {
                         var echoed = new HashSet<string>();
@@ -189,6 +200,8 @@ namespace Octgn.Headless
             engine.Runtime.IO.RedirectToConsole();
 
             var scope = engine.CreateScope();
+            _engine = engine;
+            _scope = scope;
             scope.SetVariable("_api", api);
             scope.SetVariable("_wd", game.InstallPath);
             engine.Execute(File.ReadAllText(Path.Combine(scripting, "CaseInsensitiveDict.py")), scope);

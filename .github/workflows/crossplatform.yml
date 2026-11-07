@@ -1,0 +1,81 @@
+name: Cross-platform (.NET 10)
+
+# Builds OCTGN.CrossPlatform.sln on macOS (Apple silicon) and Linux, runs the library tests,
+# then the headless check (Octgn.Headless) with the Basic-Game template and with Marvel Champions.
+
+on:
+  push:
+    branches: [ 'port/**' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  # Marvel Champions game package (third-party), pinned.
+  MARVEL_CHAMPIONS_REPOSITORY: https://github.com/twistedsistem/OCTGN-Marvel-Champions
+  MARVEL_CHAMPIONS_COMMIT: f4ad056c695d8aa7297f30999fc50f2524775222
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (arm64)
+            os: macos-latest
+            arch: arm64
+          - name: Linux (x64)
+            os: ubuntu-latest
+            arch: x86_64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Environment
+        run: |
+          uname -a
+          test "$(uname -m)" = "${{ matrix.arch }}"
+          dotnet --info
+
+      - name: Build
+        run: |
+          mkdir -p artifacts
+          dotnet build OCTGN.CrossPlatform.sln -c Release -bl:artifacts/build.binlog
+
+      - name: Library tests
+        run: dotnet octgnFX/Octgn.Test.CrossPlatform/bin/Release/net10.0/Octgn.Test.CrossPlatform.dll --result=artifacts/TestResults.xml
+
+      - name: Headless check (Basic-Game)
+        if: success() || failure()
+        working-directory: octgnFX/Octgn.Headless
+        run: dotnet bin/Release/net10.0/Octgn.Headless.dll
+
+      - name: Get Marvel Champions
+        if: success() || failure()
+        run: |
+          git clone --quiet --filter=blob:none --no-checkout "$MARVEL_CHAMPIONS_REPOSITORY" "$RUNNER_TEMP/marvel-champions"
+          git -C "$RUNNER_TEMP/marvel-champions" checkout --quiet "$MARVEL_CHAMPIONS_COMMIT"
+
+      - name: Headless check (Marvel Champions)
+        if: success() || failure()
+        working-directory: octgnFX/Octgn.Headless
+        run: dotnet bin/Release/net10.0/Octgn.Headless.dll --game "$RUNNER_TEMP/marvel-champions/055c536f-adba-4bc2-acbf-9aefb9756046"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crossplatform-${{ matrix.arch }}
+          path: artifacts/
+          if-no-files-found: ignore

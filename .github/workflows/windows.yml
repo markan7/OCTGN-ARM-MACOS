@@ -1,0 +1,91 @@
+name: Windows (.NET Framework client)
+
+# Builds OCTGN.sln, the Windows client, the way .github/workflows/copilot-setup-steps.yml.windows
+# does, and runs Octgn.Test. "upstream" builds the commit the port started from, so a failure that
+# is not caused by the port shows up on both.
+
+on:
+  push:
+    branches: [ 'port/**' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UPSTREAM_COMMIT: d1535b2ec0e76f6a9232720b32705836e5bf2cad
+
+jobs:
+  build:
+    name: Windows (${{ matrix.revision }})
+    runs-on: windows-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        revision: [ branch, upstream ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Use the upstream commit
+        if: matrix.revision == 'upstream'
+        run: |
+          git checkout --quiet $env:UPSTREAM_COMMIT
+          git submodule update --init --recursive
+        shell: pwsh
+
+      - name: Setup .NET Framework and MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # As the maintainers' setup (dotnet-t4). Whether the libraries also build net10.0 here depends
+      # on the SDKs of the image that this MSBuild can use (Octgn.MultiTarget.props).
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install the dotnet-t4 tool (networking T4 templates)
+        run: |
+          dotnet tool install -g dotnet-t4
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "User") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+          Get-Command t4 -ErrorAction Stop
+        shell: pwsh
+
+      - name: Install the .NET Framework 4.5 targeting pack (Octgn.Launcher)
+        run: |
+          Invoke-WebRequest -Uri "https://aka.ms/vs/16/release/vs_buildtools.exe" -OutFile "$env:TEMP\vs_buildtools.exe" -UseBasicParsing
+          Start-Process -FilePath "$env:TEMP\vs_buildtools.exe" -ArgumentList @("--quiet", "--wait", "--norestart", "--nocache", "--add", "Microsoft.Net.Component.4.5.TargetingPack") -NoNewWindow -Wait
+        shell: pwsh
+
+      - name: Tools
+        run: |
+          msbuild -version
+          dotnet --list-sdks
+        shell: pwsh
+
+      - name: Restore NuGet packages
+        run: nuget restore OCTGN.sln
+
+      - name: Build OCTGN.sln
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          msbuild OCTGN.sln /p:Configuration=Debug /p:Platform="Any CPU" /m:4 -v:minimal /bl:artifacts\build.binlog
+        shell: pwsh
+
+      - name: Tests (Octgn.Test)
+        if: success()
+        run: |
+          $runner = Get-ChildItem -Path packages -Recurse -Filter nunit3-console.exe | Select-Object -First 1
+          & $runner.FullName octgnFX\Octgn.Test\bin\Debug\Octgn.Test.dll --timeout=120000 --result=artifacts\TestResults.xml
+        shell: pwsh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-${{ matrix.revision }}
+          path: artifacts/
+          if-no-files-found: ignore
