@@ -99,7 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="log4net" Version="3.3.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(OctgnNewtonsoftJsonVersion)" />
     <PackageReference Include="System.IO.Abstractions" Version="19.0.1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

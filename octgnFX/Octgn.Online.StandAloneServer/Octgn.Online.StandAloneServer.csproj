@@ -43,7 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="log4net" Version="3.3.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(OctgnNewtonsoftJsonVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="Microsoft.WindowsAzure.ConfigurationManager" Version="3.2.3" />
