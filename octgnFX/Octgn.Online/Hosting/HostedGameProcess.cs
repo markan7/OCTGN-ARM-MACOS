@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Octgn.Online.Hosting;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Octgn.Communication;
 
 namespace Octgn.Library
@@ -36,8 +38,7 @@ namespace Octgn.Library
             var path = GetSASPath(sasVersion, isLocal, isDebug);
 
             _process = new Process();
-            _process.StartInfo.Arguments = string.Join(" ", arguments);
-            _process.StartInfo.FileName = path;
+            _process.StartInfo = CreateStartInfo(path, arguments);
 
             if (isLocal) { //Launch as a subprocess and share our console. Don't do this on the server otherwise it causes issues restarting things individually
                 _process.StartInfo.UseShellExecute = false;
@@ -99,7 +100,13 @@ namespace Octgn.Library
                     _process.Exited -= onExit;
                     pipe.Dispose();
                     // Closing the pipe also ends/observes a read abandoned on exit or timeout.
-                    try { await ready; } catch { }
+                    // The wait is bounded: on Unix, a pipe disposed while its connection completes
+                    // may leave the read pending.
+                    if (await Task.WhenAny(ready, Task.Delay(1000)) == ready) {
+                        try { await ready; } catch { }
+                    } else {
+                        _ = ready.ContinueWith(t => t.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                    }
                 }
             }
         }
@@ -128,6 +135,9 @@ namespace Octgn.Library
         }
 
         public static string GetSASPath(Version sasVersion, bool isLocal, bool isDebug) {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return GetCrossPlatformSASPath(isDebug);
+
             var path = "";
             // Get file path
             if (isDebug) {
@@ -148,6 +158,51 @@ namespace Octgn.Library
             }
 
             return path;
+        }
+
+        public const string SASFileName = "Octgn.Online.StandAloneServer";
+
+        /// <summary>
+        /// macOS and Linux: the server (.NET 10 build) is next to the client, or, for a debug build,
+        /// in the output folder of the Octgn.Online.StandAloneServer project. The returned file is
+        /// either the native launcher or the server's .dll (see <see cref="CreateStartInfo"/>).
+        /// </summary>
+        private static string GetCrossPlatformSASPath(bool isDebug) {
+            var baseDirectory = AppContext.BaseDirectory;
+            var candidates = new List<string> { baseDirectory };
+            if (isDebug) {
+                // <octgnFX>/<client project>/bin/<Configuration>/net10.0/: the client's own configuration first.
+                var octgnFX = Path.GetFullPath(Path.Combine(baseDirectory, "..", "..", "..", ".."));
+                var clientConfiguration = Path.GetFileName(Path.GetDirectoryName(baseDirectory.TrimEnd(Path.DirectorySeparatorChar)));
+                var configurations = new[] { clientConfiguration, "Debug", "Release" }
+                    .Where(c => !string.IsNullOrEmpty(c))
+                    .Distinct(StringComparer.OrdinalIgnoreCase);
+                foreach (var configuration in configurations)
+                    candidates.Add(Path.Combine(octgnFX, SASFileName, "bin", configuration, "net10.0"));
+            }
+            foreach (var directory in candidates) {
+                // The native launcher only starts the .dll next to it.
+                var assembly = Path.Combine(directory, SASFileName + ".dll");
+                if (!File.Exists(assembly)) continue;
+                var launcher = Path.Combine(directory, SASFileName);
+                return File.Exists(launcher) ? launcher : assembly;
+            }
+            return Path.Combine(baseDirectory, SASFileName);
+        }
+
+        /// <summary>
+        /// Process start information for the server at <paramref name="path"/>: a .dll is started
+        /// through the dotnet host that runs the current process.
+        /// </summary>
+        public static ProcessStartInfo CreateStartInfo(string path, IEnumerable<string> arguments) {
+            var joined = string.Join(" ", arguments);
+            if (!path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                return new ProcessStartInfo(path, joined);
+
+            var host = Process.GetCurrentProcess().MainModule?.FileName;
+            if (string.IsNullOrEmpty(host) || !Path.GetFileNameWithoutExtension(host).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+                host = "dotnet";
+            return new ProcessStartInfo(host, "\"" + path + "\" " + joined);
         }
 
         public static string[] CreateArguments(HostedGame game, int broadcastPort, bool isLocal) {

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Proof of concept without user interface, for macOS and Linux (step 2 of the port):
+    loads a game definition, hosts a local game with the .NET 10 server, joins it with a
+    minimal protocol client, and runs the game's IronPython scripts against that game.
+    Run it from this folder with "dotnet run" (see README.md).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Octgn.Headless</RootNamespace>
+    <AssemblyName>Octgn.Headless</AssemblyName>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="HeadlessScriptApi.cs" />
+    <Compile Include="MinimalGameClient.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="SampleGame.cs" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Python side of the scripting API, as shipped with the WPF engine. -->
+    <None Include="..\Octgn.JodsEngine\Scripting\Lib\*.py" Link="Scripting\Lib\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Octgn.JodsEngine\Scripting\CaseInsensitiveDict.py" Link="Scripting\CaseInsensitiveDict.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Octgn.JodsEngine\Scripting\Versions\3.1.0.2.py" Link="Scripting\Versions\3.1.0.2.py" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Game template of Octgn.GameStudio (git submodule). -->
+    <None Include="..\Octgn.GameStudio\Resources\Templates\Basic-Game\Game Plugin\**\*" Link="SampleGame\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Octgn.Compat.SystemWebExtensions\Octgn.Compat.SystemWebExtensions.csproj" />
+    <ProjectReference Include="..\Octgn.Communication\Octgn.Communication\Octgn.Communication.csproj" />
+    <ProjectReference Include="..\Octgn.DataNew\Octgn.DataNew.csproj" />
+    <ProjectReference Include="..\Octgn.Library\Octgn.Library.csproj" />
+    <ProjectReference Include="..\Octgn.Online\Octgn.Online.csproj" />
+    <!-- Built first; started from its own output folder (HostedGameProcess, debug lookup). -->
+    <ProjectReference Include="..\Octgn.Online.StandAloneServer\Octgn.Online.StandAloneServer.csproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- IronPython 2.7 built from source for .NET 10: the 2.7.12 package cannot run the scripts there
+         (see External/IronPython.Build/IronPython.Build.props). -->
+    <ProjectReference Include="..\External\IronPython.Build\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\External\IronPython.Build\IronPython.Modules\IronPython.Modules.csproj" />
+  </ItemGroup>
+</Project>
