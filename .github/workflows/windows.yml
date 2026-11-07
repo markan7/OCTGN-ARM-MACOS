@@ -76,8 +76,10 @@ jobs:
           msbuild OCTGN.sln /p:Configuration=Debug /p:Platform="Any CPU" /m:4 -v:minimal /bl:artifacts\build.binlog
         shell: pwsh
 
+      # Octgn.Test already has failing tests on the upstream commit: the "compare" job decides.
       - name: Tests (Octgn.Test)
         if: success()
+        continue-on-error: true
         run: |
           $runner = Get-ChildItem -Path packages -Recurse -Filter nunit3-console.exe | Select-Object -First 1
           & $runner.FullName octgnFX\Octgn.Test\bin\Debug\Octgn.Test.dll --timeout=120000 --result=artifacts\TestResults.xml
@@ -89,3 +91,36 @@ jobs:
           name: windows-${{ matrix.revision }}
           path: artifacts/
           if-no-files-found: ignore
+
+  compare:
+    name: No new test failure on Windows
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: results
+      - name: Compare with the upstream commit
+        shell: python
+        run: |
+          import sys
+          import xml.etree.ElementTree as ET
+
+          def failures(revision):
+              path = f"results/windows-{revision}/TestResults.xml"
+              try:
+                  root = ET.parse(path).getroot()
+              except (OSError, ET.ParseError) as error:
+                  sys.exit(f"No test results for {revision} ({error}): the build or the test run failed.")
+              cases = root.iter("test-case")
+              return {c.get("fullname") for c in cases if c.get("result") == "Failed"}
+
+          branch, upstream = failures("branch"), failures("upstream")
+          print(f"Failing on the upstream commit: {len(upstream)}; on the branch: {len(branch)}")
+          for name in sorted(upstream - branch):
+              print(f"  fixed on the branch: {name}")
+          new = sorted(branch - upstream)
+          for name in new:
+              print(f"::error::New failure on the branch: {name}")
+          sys.exit(1 if new else 0)
