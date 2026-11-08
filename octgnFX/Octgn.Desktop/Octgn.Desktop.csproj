@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    OCTGN game table in Avalonia, for macOS (Apple silicon) and Linux (step 3 of the macOS port): the
+    client of the WPF engine (Octgn.Engine, its .NET 10 build) with a user interface of its own.
+    Run it from this folder with "dotnet run" (see README.md).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Octgn.Desktop</RootNamespace>
+    <AssemblyName>Octgn.Desktop</AssemblyName>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- The whole user interface is written in C#: no XAML to compile. -->
+    <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.cs" Exclude="bin\**;obj\**" />
+    <None Include="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.5" />
+    <!-- Rendering without a screen: the table's own tests (Octgn.Desktop.Test) and screenshots. -->
+    <PackageReference Include="Avalonia.Headless" Version="12.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Octgn.Engine\Octgn.Engine.csproj" />
+    <!-- Built first; a local game starts it from its own output folder (HostedGameProcess, debug lookup). -->
+    <ProjectReference Include="..\Octgn.Online.StandAloneServer\Octgn.Online.StandAloneServer.csproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+</Project>
