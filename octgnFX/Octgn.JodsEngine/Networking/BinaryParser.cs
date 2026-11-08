@@ -5,7 +5,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+#if !NETCOREAPP
 using System.Windows.Media;
+#endif
 using Octgn.Play;
 using log4net;
 

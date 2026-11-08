@@ -5,12 +5,16 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+#if !NETCOREAPP
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Octgn.Controls;
+using Octgn.Scripting.Controls;
+using HorizontalAlignment = System.Windows.HorizontalAlignment;
+#endif
 using Octgn.Core;
 using Octgn.Core.DataExtensionMethods;
 using Octgn.Core.Util;
@@ -20,12 +24,10 @@ using Octgn.Networking;
 using Octgn.Play;
 using Octgn.Play.Actions;
 using Octgn.Play.Gui;
-using Octgn.Scripting.Controls;
 using Octgn.Utils;
 using Card = Octgn.Play.Card;
 using Counter = Octgn.Play.Counter;
 using Group = Octgn.Play.Group;
-using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using Marker = Octgn.Play.Marker;
 using Player = Octgn.Play.Player;
 
@@ -238,6 +240,9 @@ namespace Octgn.Scripting.Versions
             // Check pile protection
             if (!CanViewPileInScript(g))
                 return;
+#if NETCOREAPP
+            ShowGroupWindow(g, isTop, value);
+#else
             PlayWindow playWindow = WindowManager.PlayWindow;
             if (playWindow == null) return;
             Octgn.Controls.ChildWindowManager manager = playWindow.wndManager;
@@ -262,6 +267,7 @@ namespace Octgn.Scripting.Versions
                 }
             }
             else QueueAction(() => manager.Show(new GroupWindow(@g, PilePosition.All, 0)));
+#endif
         }
         public int[] GroupViewers(int id)
         {
@@ -845,6 +851,9 @@ namespace Octgn.Scripting.Versions
 
         public int? AskInteger(string question, int defaultValue)
         {
+#if NETCOREAPP
+            return QueueAction<int?>(() => Program.Ui.AskInteger("Question", question, defaultValue));
+#else
             return QueueAction<int?>(() =>
             {
                 var dlg = new InputDlg("Question", question,
@@ -853,20 +862,32 @@ namespace Octgn.Scripting.Versions
                 int result = dlg.GetPositiveInt();
                 return dlg.DialogResult.GetValueOrDefault() ? result : (int?)null;
             });
+#endif
         }
 
         public int? AskChoice(string question, List<string> choices, List<string> colors, List<string> buttons)
         {
+#if NETCOREAPP
+            return QueueAction<int?>(() => Program.Ui.AskChoice("Choose One", question, choices, colors, buttons));
+#else
             return QueueAction<int?>(() =>
             {
                 var dlg = new ChoiceDlg("Choose One", question, choices, colors, buttons);
                 int? result = dlg.GetChoice();
                 return dlg.DialogResult.GetValueOrDefault() ? result : 0;
             });
+#endif
         }
 
         public Tuple<string, string, int> AskMarker()
         {
+#if NETCOREAPP
+            return QueueAction<Tuple<string, string, int>>(() =>
+            {
+                var answer = Program.Ui.AskMarker();
+                return answer == null ? null : Tuple.Create(answer.Item1.Name, answer.Item1.Id, answer.Item2);
+            });
+#else
             return QueueAction<Tuple<string, string, int>>(() =>
             {
                 //fix MAINWINDOW bug
@@ -877,16 +898,21 @@ namespace Octgn.Scripting.Versions
                                     dlg.MarkerModel.Id.ToString(),
                                     dlg.Quantity);
             });
+#endif
         }
 
         public string AskString(string question, string defaultValue)
         {
+#if NETCOREAPP
+            return QueueAction<string>(() => Program.Ui.AskString("Question", question, defaultValue));
+#else
             return QueueAction<string>(() =>
             {
                 var dlg = new InputDlg("Question", question, defaultValue);
                 var result = dlg.GetString();
                 return dlg.DialogResult.GetValueOrDefault() ? result : null;
             });
+#endif
         }
 
         //public Tuple<string, int> AskCard(string restriction)
@@ -903,6 +929,9 @@ namespace Octgn.Scripting.Versions
 
         public int? SelectCard(List<int> idList, string question, string title)
         {
+#if NETCOREAPP
+            return QueueAction<int?>(() => Program.Ui.SelectCard(idList.Select(x => Card.Find(x)).ToList(), question, title));
+#else
             return QueueAction<int?>(() =>
             {
                 var cardList = idList.Select(x => Card.Find(x)).ToList();
@@ -910,12 +939,20 @@ namespace Octgn.Scripting.Versions
                 if (!dlg.ShowDialog().GetValueOrDefault()) return null;
                 return dlg.returnIndex;
             });
+#endif
         }
 
         public Tuple<string, int> AskCard(Dictionary<string, List<string>> properties, string op, string title)
         {
             //this.AskCard(x => x.Where(y => y.Name = "a"));
             //default(DataNew.Entities.ICard).Properties.Where(x => x.Key.Name == "Rarity" && x.Value == "Token");
+#if NETCOREAPP
+            return QueueAction<Tuple<string, int>>(() =>
+            {
+                var answer = Program.Ui.AskCard(properties, op, title);
+                return answer == null ? null : Tuple.Create(answer.Item1.Id.ToString(), answer.Item2);
+            });
+#else
             return QueueAction<Tuple<string, int>>(() =>
             {
                 //fix MAINWINDOW bug
@@ -924,6 +961,7 @@ namespace Octgn.Scripting.Versions
                 return Tuple.Create(dlg.SelectedCard.Id.ToString(),
                                     dlg.Quantity);
             });
+#endif
         }
         #endregion Messages API
 
@@ -978,10 +1016,12 @@ namespace Octgn.Scripting.Versions
                         group.AddAt(card, group.Count);
                     }
 
+#if !NETCOREAPP
                     string pictureUri = model.GetPicture();
                     Dispatcher.CurrentDispatcher.BeginInvoke(
                         new Func<string, BitmapImage>(ImageUtils.CreateFrozenBitmap),
                         DispatcherPriority.Background, pictureUri);
+#endif
 
                     Program.Client.Rpc.CreateCard(ids, keys, sizes, group);
 
@@ -1051,10 +1091,12 @@ namespace Octgn.Scripting.Versions
                         //       x += offset;
                         //       y += offset;
                     }
+#if !NETCOREAPP
                     string pictureUri = model.GetPicture();
                     Dispatcher.CurrentDispatcher.BeginInvoke(
                         new Func<string, BitmapImage>(ImageUtils.CreateFrozenBitmap),
                         DispatcherPriority.Background, pictureUri);
+#endif
                     Program.Client.Rpc.CreateCardAt(ids, models, xs, ys, faceDown != true, persist);
                 }
             });
@@ -1102,9 +1144,11 @@ namespace Octgn.Scripting.Versions
 
 				//asking for permission to call the specified url.
 				result = "Failed Setting Web Permissions";
+#if !NETCOREAPP
                 var permission = new WebPermission();
                 permission.AddPermission(NetworkAccess.Connect, url);
                 permission.Assert();
+#endif
 
                 result = "Failed Constructing WebRequest";
                 var request = (HttpWebRequest)WebRequest.Create(url);
@@ -1373,6 +1417,7 @@ namespace Octgn.Scripting.Versions
             QueueAction(() => Program.Client.Rpc.ResetReq(false));
         }
 
+#if !NETCOREAPP
         public void ShowWinForm(Form form)
         {
             QueueAction(() =>
@@ -1381,6 +1426,7 @@ namespace Octgn.Scripting.Versions
                 return;
             });
         }
+#endif
 
         private bool CanViewPileInScript(Pile pile)
         {

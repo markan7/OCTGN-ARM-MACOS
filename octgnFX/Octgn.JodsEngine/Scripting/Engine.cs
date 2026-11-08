@@ -6,7 +6,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+#if !NETCOREAPP
 using System.Windows;
+#endif
 
 using IronPython.Hosting;
 using Microsoft.Scripting;
@@ -88,7 +90,7 @@ namespace Octgn.Scripting
             //_engine.SetTrace(OnTraceback);
             _outputWriter = new StreamWriter(_outputStream);
             _engine.Runtime.IO.SetOutput(_outputStream, _outputWriter);
-            _engine.SetSearchPaths(new[] { Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Scripting\Lib") });
+            _engine.SetSearchPaths(new[] { Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripting", "Lib") });
 
             var workingDirectory = Directory.GetCurrentDirectory();
             Log.DebugFormat("Setting working directory: {0}", workingDirectory);
@@ -1728,7 +1730,11 @@ namespace Octgn.Scripting
             //_engine.Runtime.LoadAssembly(typeof(Directory).Assembly);
 
             var file = Versioned.GetFile("PythonApi", Program.GameEngine.Definition.ScriptVersion);
+#if NETCOREAPP
+            using (var str = File.OpenRead(PackUri.ToFilePath(file.Path)))
+#else
             using (var str = Application.GetResourceStream(new Uri(file.Path)).Stream)
+#endif
             using (var sr = new StreamReader(str))
             {
                 var script = sr.ReadToEnd();

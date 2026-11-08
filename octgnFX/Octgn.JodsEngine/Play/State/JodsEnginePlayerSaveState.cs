@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if !NETCOREAPP
 using System.Windows.Media;
+#endif
 using Octgn.Core.Play.Save;
 
 namespace Octgn.Play.State

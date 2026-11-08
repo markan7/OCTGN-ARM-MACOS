@@ -7,7 +7,9 @@
     using Octgn.DataNew.Entities;
     using System.IO;
     using System.Reflection;
+#if !NETCOREAPP
     using System.Windows.Media;
+#endif
     using Player = Octgn.Play.Player;
 
     public static class ExtensionMethods
@@ -41,6 +43,8 @@
             return (Player.LocalPlayer.Id) << 16 | Program.GameEngine.GetUniqueId();
         }
 
+#if !NETCOREAPP
+        // Fonts of the WPF controls (the Avalonia client loads the game fonts itself).
         public static FontFamily GetFontFamily(this DataNew.Entities.Font font, FontFamily defaultFont)
         {
             if (!System.IO.File.Exists(font.Src))
@@ -81,5 +85,6 @@
             if (font.Size > 0) elem.FontSize = font.Size;
             Log.Info(string.Format("Loaded font with source: {0}", elem.FontFamily.Source));
         }
+#endif
     }
 }

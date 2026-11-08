@@ -4,7 +4,9 @@
  */
 using System;
 using System.IO;
+#if !NETCOREAPP
 using System.Windows.Media;
+#endif
 using Octgn.Library.Networking;
 using Octgn.Play;
 using log4net;

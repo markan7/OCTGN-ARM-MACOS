@@ -23,3 +23,4 @@ using System.Runtime.InteropServices;
 [assembly: Guid("d5d59966-804e-414f-b5c6-9871c964cb7f")]
 [assembly: log4net.Config.XmlConfigurator(Watch = true)]
 [assembly: InternalsVisibleTo("Octgn.Test")]
+[assembly: InternalsVisibleTo("Octgn.Engine")]

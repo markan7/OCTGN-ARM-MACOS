@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if !NETCOREAPP
 using System.Windows.Media;
+#endif
 using Newtonsoft.Json;
 using Octgn.Core.DataExtensionMethods;
 using Octgn.Core.Play.Save;

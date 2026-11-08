@@ -1,7 +1,9 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+#if !NETCOREAPP
 using Octgn.Controls;
+#endif
 
 namespace Octgn.Play
 {
@@ -160,7 +162,11 @@ namespace Octgn.Play
         // Show an "Controlship was refused" error tooltip
         internal void DontTakeError()
         {
+#if NETCOREAPP
+            Program.Ui?.ShowError(string.Format("Controlship of {0} was refused to you.", FullName));
+#else
             Tooltip.PopupError(string.Format("Controlship of {0} was refused to you.", FullName));
+#endif
         }
 
         #endregion

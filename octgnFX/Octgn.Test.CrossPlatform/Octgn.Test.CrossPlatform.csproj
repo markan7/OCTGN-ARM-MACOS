@@ -29,10 +29,16 @@
     <Compile Include="Compat\JavaScriptSerializerTests.cs" />
     <Compile Include="Core\ColorTests.cs" />
     <Compile Include="Core\PackageRepositoryTests.cs" />
+    <Compile Include="Engine\GameEngineTests.cs" />
     <Compile Include="Library\HostedGameBroadcastSerializerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="TestData\HostedGame.BinaryFormatter.bin" LogicalName="HostedGame.BinaryFormatter.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Game template of Octgn.GameStudio (git submodule), made loadable as in the headless check. -->
+    <Compile Include="..\Octgn.Headless\SampleGame.cs" Link="Engine\SampleGame.cs" />
+    <None Include="..\Octgn.GameStudio\Resources\Templates\Basic-Game\Game Plugin\**\*" Link="SampleGame\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Octgn.Compat.SystemWebExtensions\Octgn.Compat.SystemWebExtensions.csproj" />
@@ -42,6 +48,9 @@
     <ProjectReference Include="..\Octgn.Library\Octgn.Library.csproj" />
     <ProjectReference Include="..\Octgn.Online\Octgn.Online.csproj" />
     <ProjectReference Include="..\Octgn.Server\Octgn.Server.csproj" />
+    <ProjectReference Include="..\Octgn.Engine\Octgn.Engine.csproj" />
+    <!-- Built first; the engine tests start it from its own output folder (HostedGameProcess, debug lookup). -->
+    <ProjectReference Include="..\Octgn.Online.StandAloneServer\Octgn.Online.StandAloneServer.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.13.3" />

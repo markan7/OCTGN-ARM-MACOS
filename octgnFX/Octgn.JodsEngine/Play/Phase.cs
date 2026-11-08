@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Octgn.DataNew.Entities;
 using System.Linq;
+#if !NETCOREAPP
 using System.Windows;
+#endif
 using Octgn.Utils;
 
 namespace Octgn.Play

@@ -7,7 +7,7 @@ using log4net;
 
 namespace Octgn.Scripting
 {
-    public abstract class ScriptApi
+    public abstract partial class ScriptApi
     {
         internal static ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         protected Engine ScriptEngine { get { return Program.GameEngine.ScriptEngine; } }

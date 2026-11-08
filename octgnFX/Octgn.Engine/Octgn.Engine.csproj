@@ -1,0 +1,136 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The game engine of Octgn.JodsEngine without WPF, for .NET 10 (macOS, Linux; step 3 of the port):
+    the table model (cards, groups, players, counters, markers), the game protocol client, and the
+    IronPython script engine with the script API versions.
+
+    The source files are those of the WPF engine (Octgn.JodsEngine), linked, not copied: the Windows
+    client keeps compiling them as before. In them, '#if NETCOREAPP' marks what this build does in
+    place of WPF ('#else' is the WPF code, unchanged). The legacy project of the WPF engine does not
+    define NETFRAMEWORK, hence NETCOREAPP here rather than '#if NETFRAMEWORK' as in the libraries.
+    The files of the Portable folder exist only in this build: portable stand-ins for the few WPF
+    types the model uses (Color, Point, Dispatcher), and the interface the user interface implements
+    (IPlayUi). See README.md.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Octgn</RootNamespace>
+    <AssemblyName>Octgn.Engine</AssemblyName>
+    <!-- The shared files are written for C# 7.3 (the WPF project); 13 keeps 'field' an ordinary name. -->
+    <LangVersion>13</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
+    <!-- Warnings of the WPF engine's code, as in its own build: obsolete members, unused fields. -->
+    <NoWarn>$(NoWarn);CS0067;CS0169;CS0414;CS0618;CS0649;CS0660;CS0661;CS1998;CS4014;CS8981;SYSLIB0014;SYSLIB0021;SYSLIB0023</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Version.cs" Link="Version.cs" />
+    <Compile Include="Portable\**\*.cs" />
+  </ItemGroup>
+
+  <!-- Source files of the WPF engine. -->
+  <ItemGroup>
+    <JodsEngineSource Include="Const.cs" />
+    <JodsEngineSource Include="Program.cs" />
+    <JodsEngineSource Include="Extentions\Conversion.cs" />
+    <JodsEngineSource Include="Extentions\ExtensionMethods.cs" />
+    <JodsEngineSource Include="Extentions\LinqExtensions.cs" />
+    <JodsEngineSource Include="Extentions\String.cs" />
+    <JodsEngineSource Include="Networking\BinaryParser.cs" />
+    <JodsEngineSource Include="Networking\BinaryStubs.cs" />
+    <JodsEngineSource Include="Networking\ClientHandler.cs" />
+    <JodsEngineSource Include="Networking\ClientSocket.cs" />
+    <JodsEngineSource Include="Networking\IServerCalls.cs" />
+    <JodsEngineSource Include="Networking\Mute.cs" />
+    <JodsEngineSource Include="Networking\ServerErrorEventArgs.cs" />
+    <JodsEngineSource Include="Play\Actions\Action.cs" />
+    <JodsEngineSource Include="Play\Actions\Create.cs" />
+    <JodsEngineSource Include="Play\Actions\Move.cs" />
+    <JodsEngineSource Include="Play\Actions\Rotate.cs" />
+    <JodsEngineSource Include="Play\Actions\Shake.cs" />
+    <JodsEngineSource Include="Play\Actions\Target.cs" />
+    <JodsEngineSource Include="Play\Actions\Turn.cs" />
+    <JodsEngineSource Include="Play\Card.cs" />
+    <JodsEngineSource Include="Play\CardIdentity.cs" />
+    <JodsEngineSource Include="Play\ControllableObject.cs" />
+    <JodsEngineSource Include="Play\Counter.cs" />
+    <JodsEngineSource Include="Play\DefaultMarkerModel.cs" />
+    <JodsEngineSource Include="Play\Events.cs" />
+    <JodsEngineSource Include="Play\Group.cs" />
+    <JodsEngineSource Include="Play\Gui\Selection.cs" />
+    <JodsEngineSource Include="Play\Marker.cs" />
+    <JodsEngineSource Include="Play\Phase.cs" />
+    <JodsEngineSource Include="Play\Pile.cs" />
+    <JodsEngineSource Include="Play\Player.cs" />
+    <JodsEngineSource Include="Play\Table.cs" />
+    <JodsEngineSource Include="Play\Save\JodsEngineHistory.cs" />
+    <JodsEngineSource Include="Play\Save\Replay.cs" />
+    <JodsEngineSource Include="Play\Save\ReplayClient.cs" />
+    <JodsEngineSource Include="Play\Save\ReplayEngine.cs" />
+    <JodsEngineSource Include="Play\Save\ReplayEvent.cs" />
+    <JodsEngineSource Include="Play\Save\ReplayEventType.cs" />
+    <JodsEngineSource Include="Play\Save\ReplayReader.cs" />
+    <JodsEngineSource Include="Play\Save\ReplayWriter.cs" />
+    <JodsEngineSource Include="Play\State\CardSaveState.cs" />
+    <JodsEngineSource Include="Play\State\CounterSaveState.cs" />
+    <JodsEngineSource Include="Play\State\GameEngine.cs" />
+    <JodsEngineSource Include="Play\State\GroupSaveState.cs" />
+    <JodsEngineSource Include="Play\State\JodsEngineGameSaveState.cs" />
+    <JodsEngineSource Include="Play\State\JodsEnginePlayerSaveState.cs" />
+    <JodsEngineSource Include="Play\State\MarkerSaveState.cs" />
+    <JodsEngineSource Include="Play\State\SaveState.cs" />
+    <JodsEngineSource Include="Scripting\Engine.cs" />
+    <JodsEngineSource Include="Scripting\ExecutionResult.cs" />
+    <JodsEngineSource Include="Scripting\GameEvents.cs" />
+    <JodsEngineSource Include="Scripting\PythonConverter.cs" />
+    <JodsEngineSource Include="Scripting\ScriptApi.cs" />
+    <JodsEngineSource Include="Scripting\ScriptJob.cs" />
+    <JodsEngineSource Include="Scripting\ScriptSecurityException.cs" />
+    <JodsEngineSource Include="Scripting\Versions\Script_3_1_0_0.cs" />
+    <JodsEngineSource Include="Scripting\Versions\Script_3_1_0_1.cs" />
+    <JodsEngineSource Include="Scripting\Versions\Script_3_1_0_2.cs" />
+    <JodsEngineSource Include="Utils\CompoundCall.cs" />
+    <JodsEngineSource Include="Utils\CryptoRandom.cs" />
+    <Compile Include="@(JodsEngineSource->'..\Octgn.JodsEngine\%(Identity)')" Link="JodsEngine\%(JodsEngineSource.Identity)" />
+  </ItemGroup>
+
+  <!-- Python side of the script API (resources of the WPF engine), next to the assembly. -->
+  <ItemGroup>
+    <None Include="..\Octgn.JodsEngine\Scripting\CaseInsensitiveDict.py" Link="Scripting\CaseInsensitiveDict.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Octgn.JodsEngine\Scripting\Lib\*.py" Link="Scripting\Lib\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Octgn.JodsEngine\Scripting\Versions\*.py" Link="Scripting\Versions\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- WPF resources the game data and the engine refer to (see Portable/PackUri.cs and Portable/StandIns.cs). -->
+  <ItemGroup>
+    <None Include="..\Octgn.JodsEngine\Resources\Front.jpg;..\Octgn.JodsEngine\Resources\Back.jpg" Link="Resources\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Octgn.JodsEngine\Resources\Markers\*.png" Link="Resources\Markers\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Octgn.JodsEngine\Resources\userjoinsroom.wav;..\Octgn.JodsEngine\Resources\knockknock.wav;..\Octgn.JodsEngine\Resources\doorclose.wav" Link="Resources\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Octgn.Communication\Octgn.Communication\Octgn.Communication.csproj" />
+    <ProjectReference Include="..\Octgn.Core\Octgn.Core.csproj" />
+    <ProjectReference Include="..\Octgn.DataNew\Octgn.DataNew.csproj" />
+    <ProjectReference Include="..\Octgn.Library\Octgn.Library.csproj" />
+    <ProjectReference Include="..\Octgn.Online\Octgn.Online.csproj" />
+    <!-- Scripts may read JSON with .NET Framework's JavaScriptSerializer (System.Web.Extensions). -->
+    <ProjectReference Include="..\Octgn.Compat.SystemWebExtensions\Octgn.Compat.SystemWebExtensions.csproj" />
+    <!-- IronPython 2.7 built from source for .NET 10 (see External/IronPython.Build/IronPython.Build.props). -->
+    <ProjectReference Include="..\External\IronPython.Build\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\External\IronPython.Build\IronPython.Modules\IronPython.Modules.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="3.3.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- MEF, as in the WPF engine (GameEngine.ComposeParts). -->
+    <PackageReference Include="System.ComponentModel.Composition" Version="10.0.0" />
+  </ItemGroup>
+</Project>

@@ -7,8 +7,15 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+#if !NETCOREAPP
 using System.Windows;
 using System.Windows.Threading;
+using System.Windows.Media;
+using Microsoft.Win32;
+using Octgn.Windows;
+using Octgn.Controls;
+using Octgn.Launchers;
+#endif
 using Octgn.Data;
 using Octgn.DataNew.Entities;
 using Octgn.Library;
@@ -17,19 +24,14 @@ using Octgn.Play;
 using Octgn.Utils;
 using Player = Octgn.Play.Player;
 using System.Reflection;
-using System.Windows.Media;
-using Microsoft.Win32;
 using Octgn.Core.Play;
-using Octgn.Windows;
 using log4net;
-using Octgn.Controls;
 using Octgn.Online.Hosting;
-using Octgn.Launchers;
 using Octgn.Core.DiscordIntegration;
 
 namespace Octgn
 {
-    public static class Program
+    public static partial class Program
     {
         internal static ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -57,7 +59,9 @@ namespace Octgn
 
         public static GameMessageDispatcher GameMess { get; internal set; }
 
+#if !NETCOREAPP
         public static ILauncher Launcher { get; internal set; }
+#endif
 
         public static bool DeveloperMode { get; internal set; }
 
@@ -70,7 +74,9 @@ namespace Octgn
 
         public static string UserId { get; set; }
         public static HostedGame CurrentHostedGame { get; internal set; }
+#if !NETCOREAPP
         public static SSLValidationHelper SSLHelper { get; internal set; }
+#endif
 
         static Program()
         {
@@ -100,6 +106,7 @@ namespace Octgn
             IsGameRunning = false;
         }
 
+#if !NETCOREAPP
         public static void Exit()
         {
             try { SSLHelper?.Dispose(); }
@@ -126,6 +133,7 @@ namespace Octgn
             }));
 
         }
+#endif
 
         internal static void Print(Player player, string text, string color = null)
         {
@@ -204,6 +212,7 @@ namespace Octgn
             return new Tuple<string, object[]>(finalText, args.ToArray());
         }
 
+#if !NETCOREAPP
         public static void LaunchUrl(string url)
         {
             if (url == null) return;
@@ -219,6 +228,7 @@ namespace Octgn
             }
             Process.Start(url);
         }
+#endif
 
         public static void LaunchApplication(string path, params string[] args)
         {
@@ -240,6 +250,7 @@ namespace Octgn
 
         }
 
+#if !NETCOREAPP
         public static string GetDefaultBrowserPath()
         {
             string defaultBrowserPath = null;
@@ -283,5 +294,6 @@ namespace Octgn
             var res = TopMostMessageBox.Show(action, "Oh No!",
                     MessageBoxButton.OK, MessageBoxImage.Stop);
         }
+#endif
     }
 }

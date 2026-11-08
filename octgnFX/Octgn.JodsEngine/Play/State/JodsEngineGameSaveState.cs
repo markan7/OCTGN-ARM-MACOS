@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if !NETCOREAPP
 using System.Windows.Media;
+#endif
 using Newtonsoft.Json;
 using Octgn.Core.DataExtensionMethods;
 using Octgn.Core.Play.Save;
@@ -80,8 +82,10 @@ namespace Octgn.Play.State
                 var playPlayer = Play.Player.Find(player.Id);
                 playPlayer.Color = player.Color;
                 playPlayer.ActualColor = player.Color;
+#if !NETCOREAPP
                 playPlayer.Brush = new SolidColorBrush(playPlayer.Color);
                 playPlayer.TransparentBrush = new SolidColorBrush(playPlayer.Color) { Opacity = 0.4};
+#endif
 
                 if (player is JodsEnginePlayerSaveState playerSaveState) {
                     foreach (var gv in playerSaveState.GlobalVariables) {

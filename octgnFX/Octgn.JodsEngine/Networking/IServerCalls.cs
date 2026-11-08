@@ -3,7 +3,9 @@
  * Do not modify, changes will get lost when the file is regenerated!
  */
 using System;
+#if !NETCOREAPP
 using System.Windows.Media;
+#endif
 using Octgn.Play;
 
 namespace Octgn.Networking

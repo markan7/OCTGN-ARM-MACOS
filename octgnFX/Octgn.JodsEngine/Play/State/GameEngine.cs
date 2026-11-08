@@ -6,12 +6,14 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+#if !NETCOREAPP
 using System.Windows;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Octgn.Scripting.Controls;
+#endif
 using Octgn.Play;
 using Octgn.Play.Gui;
-using Octgn.Scripting.Controls;
 using Octgn.Utils;
 using log4net;
 
@@ -35,7 +37,7 @@ using Octgn.Core.Play;
 namespace Octgn
 {
     [Serializable]
-    public class GameEngine : INotifyPropertyChanged {
+    public partial class GameEngine : INotifyPropertyChanged {
         internal static ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
 
@@ -49,14 +51,18 @@ namespace Octgn
 
         public ObservableDeck LoadedCards { get; }
 
+#if !NETCOREAPP
         public DeckStatsViewModel DeckStats { get; }
+#endif
 
         private const int MaxRecentMarkers = 10;
         private const int MaxRecentCards = 10;
 
         private readonly List<DataNew.Entities.Card> _recentCards = new List<DataNew.Entities.Card>(MaxRecentCards);
         private readonly List<GameMarker> _recentMarkers = new List<GameMarker>(MaxRecentMarkers);
+#if !NETCOREAPP
         private readonly Dictionary<string, Tuple<BitmapImage, BitmapImage>> _cardFrontsBacksCache = new Dictionary<string, Tuple<BitmapImage, BitmapImage>>();
+#endif
         private readonly Table _table;
         internal readonly string Password;
 
@@ -123,7 +129,9 @@ namespace Octgn
             LoadedCards = new ObservableDeck();
             LoadedCards.Sections = new ObservableCollection<ObservableSection>();
 
+#if !NETCOREAPP
             DeckStats = new DeckStatsViewModel();
+#endif
 
             Spectator = false;
             Program.GameMess.Clear();
@@ -165,12 +173,17 @@ namespace Octgn
                 GameBoard = Definition.GameBoards[""];
             ActivePlayer = null;
 
+#if NETCOREAPP
+            // The user interface loads the pictures of the card sizes (Front, Back) when it shows them.
+            Program.Dispatcher.Invoke(new Action(() => {
+#else
             foreach (var size in Definition.CardSizes) {
                 var front = ImageUtils.CreateFrozenBitmap(new Uri(size.Value.Front));
                 var back = ImageUtils.CreateFrozenBitmap(new Uri(size.Value.Back));
                 _cardFrontsBacksCache.Add(size.Value.Name, new Tuple<BitmapImage, BitmapImage>(front, back));
             }
             Application.Current.Dispatcher.Invoke(new Action(() => {
+#endif
                 // clear any existing players
                 Play.Player.All.Clear();
                 Player.Spectators.Clear();
@@ -197,7 +210,9 @@ namespace Octgn
             LoadedCards = new ObservableDeck();
             LoadedCards.Sections = new ObservableCollection<ObservableSection>();
 
+#if !NETCOREAPP
             DeckStats = new DeckStatsViewModel();
+#endif
 
             Spectator = specator;
             Program.GameMess.Clear();
@@ -242,11 +257,18 @@ namespace Octgn
                 this.Nickname = Prefs.Nickname;
                 if (string.IsNullOrWhiteSpace(this.Nickname)) this.Nickname = Randomness.GrabRandomNounWord() + new Random().Next(30);
                 var retNick = this.Nickname;
+#if NETCOREAPP
+                Program.Dispatcher.Invoke(() =>
+                {
+                    retNick = Program.Ui.AskString("Choose a nickname", "Choose a nickname", Nickname);
+                });
+#else
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     var i = new InputDlg("Choose a nickname", "Choose a nickname", Nickname);
                     retNick = i.GetString();
                 });
+#endif
                 this.Nickname = retNick;
             }
             // Init fields
@@ -256,6 +278,10 @@ namespace Octgn
                 GameBoard = Definition.GameBoards[""];
             ActivePlayer = null;
 
+#if NETCOREAPP
+            Program.Dispatcher.Invoke(new Action(() =>
+            {
+#else
             foreach (var size in Definition.CardSizes)
             {
                 var front = ImageUtils.CreateFrozenBitmap(new Uri(size.Value.Front));
@@ -264,6 +290,7 @@ namespace Octgn
             }
             Application.Current.Dispatcher.Invoke(new Action(() =>
             {
+#endif
                 // clear any existing players
                 Play.Player.All.Clear();
                 Player.Spectators.Clear();
@@ -430,6 +457,7 @@ namespace Octgn
             }
         }
 
+#if !NETCOREAPP
         public Thickness BoardMargin
         {
             get
@@ -445,6 +473,7 @@ namespace Octgn
                 }
             }
         }
+#endif
 
         public GameEventProxy EventProxy { get; set; }
 
@@ -560,9 +589,13 @@ namespace Octgn
             string blockString = null;
 
             Program.Dispatcher.InvokeAsync(() => {
+#if NETCOREAPP
+                blockString = GameMessageText.Format(obj) + Environment.NewLine;
+#else
                 var block = ChatControl.GameMessageToBlock(obj);
 
                 blockString = BlockToString(block);
+#endif
 
                 try {
                     _logStream.Write(blockString);
@@ -574,6 +607,7 @@ namespace Octgn
             });
         }
 
+#if !NETCOREAPP
         private string BlockToString(System.Windows.Documents.Block block) {
             if (block == null) return string.Empty;
 
@@ -645,6 +679,7 @@ namespace Octgn
                     throw new InvalidOperationException($"Inline {inline.GetType().Name} not implemented.");
             }
         }
+#endif
 
         public DateTimeOffset? StartTime;
 
@@ -729,11 +764,13 @@ namespace Octgn
             foreach (var g in Definition.GlobalVariables)
                 GlobalVariables[g.Key] = g.Value.Value;
 
+#if !NETCOREAPP
             DeckStats.Reset();
 
             //fix MAINWINDOW bug
             PlayWindow mainWin = WindowManager.PlayWindow;
             mainWin.RaiseEvent(new CardEventArgs(CardControl.CardHoveredEvent, mainWin));
+#endif
 
             EventProxy.OnGameStart_3_1_0_0();
             EventProxy.OnGameStart_3_1_0_1();
@@ -775,6 +812,7 @@ namespace Octgn
             Selection.Clear();
         }
 
+#if !NETCOREAPP
         public BitmapImage GetCardFront(CardSize size)
         {
             return _cardFrontsBacksCache[size.Name].Item1;
@@ -784,6 +822,7 @@ namespace Octgn
         {
             return _cardFrontsBacksCache[size.Name].Item2;
         }
+#endif
 
         public ushort GetUniqueId()
         {
@@ -886,14 +925,18 @@ namespace Octgn
                         cards[j++] = card;
                         group.AddAt(card, group.Count);
 
+#if !NETCOREAPP
                         DeckStats.AddCard(card);
+#endif
                     }
 
+#if !NETCOREAPP
                     // Load images in the background
                     string pictureUri = element.GetPicture();
                     Dispatcher.CurrentDispatcher.BeginInvoke(
                         new Func<string, BitmapImage>(ImageUtils.CreateFrozenBitmap),
                         DispatcherPriority.Background, pictureUri);
+#endif
                 }
             }
 

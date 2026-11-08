@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+#if !NETCOREAPP
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+#endif
 
 namespace Octgn.Play.Gui
 {
@@ -67,6 +69,7 @@ namespace Octgn.Play.Gui
                 action(Selected[i]);
         }
 
+#if !NETCOREAPP
         public static IEnumerable<CardControl> GetCardControls(GroupControl ctrl)
         {
             if (IsEmpty()) yield break;
@@ -89,6 +92,7 @@ namespace Octgn.Play.Gui
                 foreach (CardControl cardCtrl in GetCardControls(ctrl))
                     yield return cardCtrl;
         }
+#endif
 
         public static IEnumerable<Card> ExtendToSelection(Card card)
         {

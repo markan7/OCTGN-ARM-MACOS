@@ -14,10 +14,12 @@ using System.Text;
 using log4net;
 using Newtonsoft.Json;
 using Octgn.Core.DataExtensionMethods;
+#if !NETCOREAPP
 using System.Windows.Media;
+using Octgn.Controls;
+#endif
 using Octgn.Core.Play;
 using Octgn.Play.State;
-using Octgn.Controls;
 using Octgn.Play.Gui;
 using Octgn.DataNew.Entities;
 using Card = Octgn.Play.Card;
@@ -28,7 +30,7 @@ using Phase = Octgn.Play.Phase;
 using Octgn.DataNew;
 
 namespace Octgn.Networking
-{    public sealed class Handler
+{    public sealed partial class Handler
     {
         internal static ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -127,10 +129,14 @@ namespace Octgn.Networking
 
             Program.GameEngine.OnStart();
 
+#if NETCOREAPP
+            Program.Ui?.StartGame();
+#else
             if (WindowManager.PlayWindow != null)
             {
                 WindowManager.PlayWindow.PreGameLobby.Start(false);
             }
+#endif
             if (Program.GameEngine.WaitForGameState)
             {
                 Log.Debug("Start WaitForGameState");
@@ -1010,17 +1016,25 @@ namespace Octgn.Networking
             Program.GameMess.System("{0} starts a limited game.", player);
             if (Player.LocalPlayer.Spectator == false)
             {
+#if NETCOREAPP
+                Program.Ui?.StartLimited(packs);
+#else
                 var wnd = new Play.Dialogs.PickCardsDialog();
                 WindowManager.PlayWindow.ShowBackstage(wnd);
                 wnd.OpenPacks(packs);
+#endif
             }
         }
 
         public void AddPacks(Player player, Guid[] packs, bool selfOnly)
         {
             WriteReplayAction(player.Id);
+#if NETCOREAPP
+            var packNames = PackNames(packs);
+#else
             var wnd = (Play.Dialogs.PickCardsDialog)WindowManager.PlayWindow.backstage.Child;
             var packNames = wnd.PackNames(packs);
+#endif
             if (packNames == "") return;
             if (selfOnly && !IsLocalPlayer(player))
             {
@@ -1029,12 +1043,20 @@ namespace Octgn.Networking
             else if (selfOnly && IsLocalPlayer(player))
             {
                 Program.GameMess.System("{0} added {1} to their pool.", player, packNames);
+#if NETCOREAPP
+                Program.Ui?.AddPacks(packs);
+#else
                 wnd.OpenPacks(packs);
+#endif
             }
             else
             {
                 Program.GameMess.System("{0} added {1} to the limited game for all players.", player, packNames);
+#if NETCOREAPP
+                Program.Ui?.AddPacks(packs);
+#else
                 wnd.OpenPacks(packs);
+#endif
             }
         }
 
@@ -1295,6 +1317,10 @@ namespace Octgn.Networking
             if (granted && IsLocalPlayer(requester))
             {
                 // Use the WPF Dispatcher to show the pile view on the UI thread
+#if NETCOREAPP
+                var position = viewType == "top" ? PilePosition.Top : viewType == "bottom" ? PilePosition.Bottom : PilePosition.All;
+                Program.Dispatcher.BeginInvoke(new Action(() => Program.Ui?.ShowGroup(pile, position, cardCount)));
+#else
                 Program.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     try
@@ -1337,6 +1363,7 @@ namespace Octgn.Networking
                         Log.Error($"Error showing pile view: {ex.Message}");
                     }
                 }));
+#endif
             }
         }
         
@@ -1364,11 +1391,19 @@ namespace Octgn.Networking
                             break;
                     }
                     
+#if NETCOREAPP
+                    Action<bool, bool, bool> onResult;
+#else
                     // Create the dialog UserControl
                     var dialog = new PileViewPermissionDialog(pile, requester, viewDescription);
+#endif
                     
                     // Set up callback to handle the result
+#if NETCOREAPP
+                    onResult = (granted, permanent, dialogResult) =>
+#else
                     dialog.OnResult = (granted, permanent, dialogResult) =>
+#endif
                     {
                         if (dialogResult)
                         {
@@ -1401,8 +1436,12 @@ namespace Octgn.Networking
                         Program.Client.Rpc.GrantPileViewPermission(Player.LocalPlayer, pile, requester, granted, permanent, viewType, cardCount);
                     };
                     
+#if NETCOREAPP
+                    Program.Ui.AskPileViewPermission(pile, requester, viewDescription, onResult);
+#else
                     // Show it in the backstage like PickCardsDialog
                     WindowManager.PlayWindow.ShowBackstage(dialog);
+#endif
                 }
                 catch (Exception ex)
                 {

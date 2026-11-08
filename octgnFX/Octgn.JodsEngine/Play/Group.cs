@@ -3,9 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+#if !NETCOREAPP
 using System.Windows.Documents;
 using System.Windows.Input;
 using Octgn.Controls;
+#endif
 using Octgn.Extentions;
 
 namespace Octgn.Play
@@ -248,7 +250,11 @@ namespace Octgn.Play
 
         internal override void NotControlledError()
         {
+#if NETCOREAPP
+            Program.Ui?.ShowError("You don't control this group.");
+#else
             Tooltip.PopupError("You don't control this group.");
+#endif
         }
 
         internal void FreezeCardsVisibility(bool notifyServer)
@@ -437,6 +443,7 @@ namespace Octgn.Play
         public bool TraceNotification { get; set; }
     }
 
+#if !NETCOREAPP
     internal class ShuffleTraceChatHandler
     {
         public Inline Line { get; set; }
@@ -450,6 +457,7 @@ namespace Octgn.Play
             run.Text = string.Format("{0} is shuffled", group.FullName);
         }
     }
+#endif
 
     public class ActionShortcut
     {

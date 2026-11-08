@@ -6,7 +6,9 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+#if !NETCOREAPP
 using System.Windows.Threading;
+#endif
 
 namespace Octgn.Play.Save
 {

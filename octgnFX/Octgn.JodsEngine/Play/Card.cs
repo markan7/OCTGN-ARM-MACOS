@@ -5,8 +5,10 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+#if !NETCOREAPP
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+#endif
 using Octgn.Play.Actions;
 using Octgn.Play.Gui;
 using Octgn.Utils;
@@ -28,7 +30,7 @@ namespace Octgn.Play
         Rot270 = 3
     };
 
-    public sealed class Card : ControllableObject
+    public sealed partial class Card : ControllableObject
     {
         internal static ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -761,6 +763,7 @@ namespace Octgn.Play
             Program.GameMess.PlayerEvent(Player.LocalPlayer, "peeked at {0}.", this.Type.Model);
         }
 
+#if !NETCOREAPP
         internal BitmapImage GetBitmapImage(bool up, bool proxyOnly = false)
         {
             if (!up)
@@ -780,6 +783,7 @@ namespace Octgn.Play
 
             return bmpo ?? Program.GameEngine.GetCardFront(this.Size);
         }
+#endif
 
         internal void SetOrientation(CardOrientation value)
         {

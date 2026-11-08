@@ -9,17 +9,21 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+#if !NETCOREAPP
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+#endif
 using log4net;
 using Octgn.Core.DataExtensionMethods;
 using Octgn.Core.Play;
 using Octgn.DataNew.Entities;
+#if !NETCOREAPP
 using Octgn.Site.Api;
+#endif
 
 namespace Octgn.Play
 {
-    public sealed class Player : INotifyPropertyChanged, IPlayPlayer
+    public sealed partial class Player : INotifyPropertyChanged, IPlayPlayer
     {
         internal static ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         #region Static members
@@ -149,8 +153,10 @@ namespace Octgn.Play
         private readonly Counter[] _counters; // Counters this lPlayer owns
 
         private readonly Group[] _groups; // Groups this lPlayer owns
+#if !NETCOREAPP
         private Brush _solidBrush;
         private Brush _transparentBrush;
+#endif
         private bool _invertedTable;
         private string _name;
         private byte _id;
@@ -306,6 +312,7 @@ namespace Octgn.Play
         public Color Color { get; set; }
         public Color ActualColor { get; set; }
 
+#if !NETCOREAPP
         // Work around a WPF binding bug ? Borders don't seem to bind correctly to Color!
         public Brush Brush
         {
@@ -318,6 +325,7 @@ namespace Octgn.Play
             get { return _transparentBrush; }
             set { _transparentBrush = value; }
         }
+#endif
 
         public PlayerState State
         {
@@ -337,6 +345,7 @@ namespace Octgn.Play
             }
         }
 
+#if !NETCOREAPP
         public BitmapImage SleeveImage {
             get => _sleeveImage;
             set {
@@ -351,6 +360,7 @@ namespace Octgn.Play
         public void SetSleeve(ISleeve sleeve) {
             SleeveImage = sleeve.GetImage();
         }
+#endif
 
         //Set the player's color based on their id.
         public void SetPlayerColor(int idx)
@@ -368,10 +378,12 @@ namespace Octgn.Play
                 return;
             }
             Color = playerColor;
+#if !NETCOREAPP
             _solidBrush = new SolidColorBrush(Color);
             _solidBrush.Freeze();
             _transparentBrush = new SolidColorBrush(Color) { Opacity = 0.4 };
             _transparentBrush.Freeze();
+#endif
 
             //Notify clients that this has changed
             OnPropertyChanged("Color");
@@ -393,8 +405,10 @@ namespace Octgn.Play
 
                 Color = (Color) convertFromString;
 
+#if !NETCOREAPP
                 _solidBrush = new SolidColorBrush(Color);
                 _transparentBrush = new SolidColorBrush(Color) {Opacity = 0.4};
+#endif
 
                 OnPropertyChanged("Color");
                 OnPropertyChanged("Brush");
@@ -425,6 +439,8 @@ namespace Octgn.Play
             if (!string.IsNullOrWhiteSpace(userId)) {
                 UserId = userId;
 
+#if !NETCOREAPP
+                // The user's icon, from the site's API (not used by this build yet).
                 if (!userId.StartsWith("##LOCAL##")) {
                     Task.Factory.StartNew(async () => {
                         try {
@@ -439,6 +455,7 @@ namespace Octgn.Play
                         }
                     });
                 }
+#endif
             } else {
                 UserId = $"##LOCAL##{name}:{id}";
             }

@@ -15,6 +15,8 @@ namespace Octgn.Extentions
 
     public static partial class StringExtensionMethods
     {
+#if !NETCOREAPP
+        // Encrypted preferences of the WPF client (RIPEMD160 is not in .NET 10).
         public static string Decrypt(this string text)
         {
             if (string.IsNullOrEmpty(text)) return text;
@@ -32,6 +34,7 @@ namespace Octgn.Extentions
             byte[] hasher = hash.ComputeHash(Encoding.Unicode.GetBytes(un));
             return Cryptor.Encrypt(text, BitConverter.ToString(hasher));
         }
+#endif
 
         /// <summary>
         /// Provides a cleaner method of string concatenation. (i.e. "Name {0}".With(firstName)

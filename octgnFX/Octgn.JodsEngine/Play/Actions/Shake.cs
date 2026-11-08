@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
+#if !NETCOREAPP
 using System.Windows.Controls;
+#endif
 using Octgn.DataNew.Entities;
 
 namespace Octgn.Play.Actions
@@ -44,6 +46,10 @@ namespace Octgn.Play.Actions
         
         private bool FocusPlayerTab(Player player)
         {
+#if NETCOREAPP
+            // The user interface shows the shaken card itself (Card.DoShake notifies IsShaking).
+            return false;
+#else
             try
             {
                 var windowManager = WindowManager.PlayWindow;
@@ -76,6 +82,7 @@ namespace Octgn.Play.Actions
             }
 
             return false;
+#endif
         }
 
         private (string message, object[] args) GetShakeMessage()
