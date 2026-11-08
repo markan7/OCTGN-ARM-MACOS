@@ -43,7 +43,11 @@
                     Cache[path].Dispose();
                     Cache.Remove(path);
                 }
+#if NETCOREAPP
+                Cache.Add(path, new CacheObject(this, path, obj, Watched(path)));
+#else
                 Cache.Add(path,new CacheObject(this,path,obj));
+#endif
             }
         }
         public void InvalidatePath(string path)
@@ -70,6 +74,77 @@
                 }
             }
         }
+#if NETCOREAPP
+
+        // One watcher for the game database, not one per file read. On Linux each FileSystemWatcher takes an
+        // inotify instance, and a user has 128 of them: a game of a hundred sets (Marvel Champions) took them
+        // all, and the files read after that failed (their sets were missing from the game).
+        private readonly List<FileSystemWatcher> _watchers = new List<FileSystemWatcher>();
+
+        /// <summary>
+        /// Whether a watcher of the provider watches the file: true under the game database (the watcher is
+        /// made the first time), false elsewhere (the cached object watches its file, as before).
+        /// </summary>
+        private bool Watched(string path)
+        {
+            string root;
+            try
+            {
+                root = Library.Config.Instance?.Paths?.DatabasePath;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            if (string.IsNullOrEmpty(root) || !IsUnder(path, root) || !Directory.Exists(root)) return false;
+            if (_watchers.Any(x => IsUnder(path, x.Path))) return true;
+            try
+            {
+                var watcher = new FileSystemWatcher(root)
+                {
+                    IncludeSubdirectories = true,
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName | NotifyFilters.DirectoryName
+                };
+                watcher.Changed += (sender, args) => InvalidateUnder(args.FullPath);
+                watcher.Deleted += (sender, args) => InvalidateUnder(args.FullPath);
+                watcher.Renamed += (sender, args) =>
+                {
+                    InvalidateUnder(args.OldFullPath);
+                    InvalidateUnder(args.FullPath);
+                };
+                // Events lost (too many at once): forget all that is under the watcher.
+                watcher.Error += (sender, args) => InvalidateUnder(root);
+                watcher.EnableRaisingEvents = true;
+                _watchers.Add(watcher);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("Could not watch " + root, e);
+                return false;
+            }
+        }
+
+        /// <summary>Forgets the cached files at a path, or under it when it is a folder.</summary>
+        private void InvalidateUnder(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return;
+            lock (CacheLocker)
+            {
+                foreach (var key in Cache.Keys.Where(x => IsUnder(x, path)).ToArray())
+                    InvalidatePath(key);
+            }
+        }
+
+        /// <summary>The path is the folder or the file, or under it (letter case aside).</summary>
+        private static bool IsUnder(string path, string folder)
+        {
+            var p = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
+            var f = Path.GetFullPath(folder).TrimEnd(Path.DirectorySeparatorChar);
+            return p.Equals(f, StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith(f + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+#endif
     }
     internal class CacheObject : IDisposable
     {
@@ -78,12 +153,27 @@
         internal FileSystemWatcher Watcher { get; set; }
         internal ICacheProvider Provider { get; set; }
         internal bool Disposed;
+#if NETCOREAPP
+        /// <param name="watched">A watcher of the provider watches the file: the object makes none.</param>
+        public CacheObject(ICacheProvider provider, string path, object obj, bool watched)
+        {
+            Provider = provider;
+            Path = path;
+            Object = obj;
+            if (!watched) Watch(path);
+        }
+
+        private void Watch(string path)
+        {
+            var fi = new FileInfo(path);
+#else
         public CacheObject(ICacheProvider provider, string path, object obj)
         {
             var fi = new FileInfo(path);
             Provider = provider;
             Path = path;
             Object = obj;
+#endif
             Watcher = new FileSystemWatcher(fi.Directory.FullName,fi.Name);
             Watcher.NotifyFilter =  NotifyFilters.LastWrite | NotifyFilters.Size
                                    | NotifyFilters.FileName | NotifyFilters.DirectoryName ;
@@ -111,6 +201,12 @@
         public void Dispose()
         {
             if (Disposed) return;
+#if NETCOREAPP
+            Disposed = true;
+            Object = null;
+            Path = null;
+            if (Watcher == null) return;
+#endif
             Watcher.EnableRaisingEvents = false;
             Watcher.Changed -= this.WatcherOnChanged;
             Watcher.Deleted -= this.WatcherOnDeleted;

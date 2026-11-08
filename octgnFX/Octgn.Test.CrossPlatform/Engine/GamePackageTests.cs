@@ -117,6 +117,43 @@ namespace Octgn.Test.Engine
             CollectionAssert.AreEqual(bundled, File.ReadAllBytes(card.GetPicture()));
         }
 
+        [Test, Order(5)]
+        public void AGameOfManySetsIsReadWhole() {
+            // More sets than a Linux user has inotify instances (128): the game database took one per file it
+            // read, to know when it changes, and failed to read the sets after that (Marvel Champions has 131).
+            var folder = TestPackages.SampleGame(Path.Combine(_work, "ManySets"));
+            var template = XDocument.Load(Directory.GetFiles(Path.Combine(folder, "Sets"), "set.xml", SearchOption.AllDirectories).Single());
+            for (var i = 0; i < 150; i++) {
+                var set = new XDocument(template);
+                set.Root.SetAttributeValue("id", Guid.NewGuid());
+                set.Root.SetAttributeValue("name", "Set " + i);
+                foreach (var card in set.Root.Descendants("card")) card.SetAttributeValue("id", Guid.NewGuid());
+                Directory.CreateDirectory(Path.Combine(folder, "Sets", "set-" + i));
+                set.Save(Path.Combine(folder, "Sets", "set-" + i, "set.xml"));
+            }
+            var cardsPerSet = template.Root.Descendants("card").Count();
+
+            var game = GameSession.InstallGame(folder);
+
+            Assert.AreEqual(151, game.Sets().Count());
+            Assert.AreEqual(151 * cardsPerSet, game.AllCards().Count());
+        }
+
+        [Test]
+        public void TheGameDatabaseSeesAChangedSet() {
+            // The watcher of the game database: a set changed on disk is read again.
+            var game = GameSession.InstalledGames().Single();
+            var set = game.Sets().First();
+            var file = Path.Combine(set.InstallPath, "set.xml");
+            var xml = XDocument.Load(file);
+            xml.Root.SetAttributeValue("name", "Renamed on disk");
+            xml.Save(file);
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            while (game.Sets().All(s => s.Name != "Renamed on disk") && DateTime.UtcNow < deadline)
+                System.Threading.Thread.Sleep(50);
+            Assert.That(game.Sets().Select(s => s.Name), Has.Member("Renamed on disk"));
+        }
+
         [Test]
         public void TheImagesOfAGameNotInstalledAreRefused() {
             var package = Path.Combine(_work, "other-images.o8c");
