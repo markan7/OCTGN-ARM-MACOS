@@ -82,6 +82,7 @@ namespace Octgn.Test.Engine
 
             var picture = card.GetPicture();
             Assert.AreEqual(Path.Combine(card.GetSet().ImagePackUri, card.Id + ".png"), picture);
+            StringAssert.StartsWith(Path.Combine(Octgn.Library.Config.Instance.DataDirectoryFull, "ImageDatabase") + Path.DirectorySeparatorChar, picture);
             CollectionAssert.AreEqual(TestPackages.Png, File.ReadAllBytes(picture));
         }
 
@@ -152,6 +153,24 @@ namespace Octgn.Test.Engine
             while (game.Sets().All(s => s.Name != "Renamed on disk") && DateTime.UtcNow < deadline)
                 System.Threading.Thread.Sleep(50);
             Assert.That(game.Sets().Select(s => s.Name), Has.Member("Renamed on disk"));
+        }
+
+        [Test]
+        public void TheImagesMisplacedBeforeGoToTheImageDatabase() {
+            // The setting of the image database is written as on Windows: %OCTGN_DATA%\ImageDatabase. On macOS
+            // and Linux the images went to a folder of that name, with the backslash, beside the data folder.
+            if (Path.DirectorySeparatorChar == '\\') Assert.Ignore("Windows: the backslash is a separator.");
+            var data = Octgn.Library.Config.Instance.DataDirectoryFull;
+            Assert.AreEqual(Path.Combine(data, "ImageDatabase"), Octgn.Library.Config.Instance.ImageDirectoryFull);
+            var misplaced = data + "\\ImageDatabase";
+            var cards = Path.Combine(misplaced, Guid.NewGuid().ToString(), "Sets", Guid.NewGuid().ToString(), "Cards");
+            Directory.CreateDirectory(cards);
+            File.WriteAllBytes(Path.Combine(cards, "card.png"), TestPackages.Png);
+
+            GameSession.MoveMisplacedImageDatabase();
+
+            FileAssert.Exists(Path.Combine(data, "ImageDatabase", Path.GetRelativePath(misplaced, cards), "card.png"));
+            DirectoryAssert.DoesNotExist(misplaced);
         }
 
         [Test]

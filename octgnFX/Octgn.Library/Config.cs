@@ -134,6 +134,13 @@ namespace Octgn.Library
         public string ResolvePath(string path) {
             path = Environment.ExpandEnvironmentVariables(path);
 
+            // The settings write their paths as on Windows ("%OCTGN_DATA%\ImageDatabase"). Elsewhere a
+            // backslash is a character of a name: the images went to a folder named "OCTGN\ImageDatabase",
+            // beside the data folder.
+            if (Path.DirectorySeparatorChar != '\\') {
+                path = path.Replace('\\', Path.DirectorySeparatorChar);
+            }
+
             if (!Path.IsPathRooted(path)) {
                 path = Path.Combine(WorkingDirectory, path);
             }

@@ -81,8 +81,9 @@ namespace Octgn.Portable
                     Config.Instance = new Config();
                     DbContext.SetContext(new DbContext());
                 }
-                if (_initialized) return;
                 if (Config.Instance == null) Config.Instance = new Config();
+                if (dataDirectory != null || !_initialized) MoveMisplacedImageDatabase();
+                if (_initialized) return;
 
                 // GameMessageLoader: cards in messages keep the name they have when the message is written.
                 GameMessage.MuteChecker = () => Program.Client != null && Program.Client.Muted != 0;
@@ -99,6 +100,41 @@ namespace Octgn.Portable
                 Versioned.Register<ScriptApi>();
                 _initialized = true;
             }
+        }
+
+        /// <summary>
+        /// Before the Windows paths of the settings were resolved on macOS and Linux (Config.ResolvePath), the
+        /// card images went to a folder named "OCTGN\ImageDatabase" beside the data folder: they go where they
+        /// belong, the image database of the data folder.
+        /// </summary>
+        internal static void MoveMisplacedImageDatabase() {
+            if (Path.DirectorySeparatorChar == '\\') return;
+            try {
+                var misplaced = Environment.ExpandEnvironmentVariables(Config.Instance.ImageDirectory);
+                var target = Config.Instance.ImageDirectoryFull;
+                if (!misplaced.Contains('\\') || misplaced == target || !Directory.Exists(misplaced)) return;
+                MoveInto(misplaced, target);
+                Log.Info($"Card images moved from {misplaced} to {target}");
+            } catch (Exception ex) {
+                Log.Warn("Move the card images to the image database", ex);
+            }
+        }
+
+        /// <summary>Moves a folder into another, what is already there kept.</summary>
+        private static void MoveInto(string source, string target) {
+            if (!Directory.Exists(target)) {
+                Directory.CreateDirectory(Path.GetDirectoryName(target));
+                Directory.Move(source, target);
+                return;
+            }
+            foreach (var file in Directory.GetFiles(source)) {
+                var destination = Path.Combine(target, Path.GetFileName(file));
+                if (File.Exists(destination)) File.Delete(file);
+                else File.Move(file, destination);
+            }
+            foreach (var folder in Directory.GetDirectories(source))
+                MoveInto(folder, Path.Combine(target, Path.GetFileName(folder)));
+            Directory.Delete(source);
         }
 
         private static IGameMessage DescribeArguments(IGameMessage message) {
