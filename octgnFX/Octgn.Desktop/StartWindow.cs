@@ -104,7 +104,7 @@ namespace Octgn.Desktop
         private async Task AddGameFromPicker() {
             var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "The folder of the game (with its definition.xml)" });
             var path = folders.FirstOrDefault()?.TryGetLocalPath();
-            if (path != null) AddGame(path);
+            if (path != null) await Install(new[] { path });
         }
 
         /// <summary>Adds a game from its folder or its package (.o8g, .nupkg), as the command line's --game does.</summary>
@@ -128,19 +128,19 @@ namespace Octgn.Desktop
                 FileTypeFilter = new[] { new FilePickerFileType("OCTGN packages") { Patterns = new[] { "*.o8g", "*.nupkg", "*.o8c" } } },
             });
             var paths = files.Select(f => f.TryGetLocalPath()).Where(p => p != null).ToList();
-            if (paths.Count > 0) await InstallPackages(paths);
+            if (paths.Count > 0) await Install(paths);
         }
 
         /// <summary>
-        /// Installs packages, away from the UI thread: the games first (.o8g, .nupkg), then the card images
-        /// (.o8c), whose game must be installed. Stops at the first one that fails, and says so. True when all
-        /// were installed.
+        /// Installs games and card images, away from the UI thread: the games first (a folder, .o8g, .nupkg),
+        /// then the card images (.o8c), whose game must be installed. Stops at the first one that fails, and
+        /// says so. True when all were installed.
         /// </summary>
-        public async Task<bool> InstallPackages(IReadOnlyList<string> paths) {
+        public async Task<bool> Install(IReadOnlyList<string> paths) {
             var installed = new List<string>();
             Guid? select = null;
             foreach (var path in paths.OrderBy(p => GameSession.IsImagePack(p) ? 1 : 0)) {
-                var name = System.IO.Path.GetFileName(path);
+                var name = System.IO.Path.GetFileName(path.TrimEnd('/', '\\'));
                 _status.Text = $"Installing {name}…";
                 try {
                     if (GameSession.IsImagePack(path)) {

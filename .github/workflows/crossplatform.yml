@@ -17,9 +17,10 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: '1'
   DOTNET_NOLOGO: '1'
   AVALONIA_TELEMETRY_OPTOUT: '1'
-  # Marvel Champions game package (third-party), pinned.
-  MARVEL_CHAMPIONS_REPOSITORY: https://github.com/twistedsistem/OCTGN-Marvel-Champions
-  MARVEL_CHAMPIONS_COMMIT: f4ad056c695d8aa7297f30999fc50f2524775222
+  # Marvel Champions game (third-party), pinned: version 0.0.3.98 of the repository where it is kept up to
+  # date (twistedsistem/OCTGN-Marvel-Champions stops at 0.0.3.10, April 2022).
+  MARVEL_CHAMPIONS_REPOSITORY: https://github.com/Ouroboros009/OCTGN-Marvel-Champions
+  MARVEL_CHAMPIONS_COMMIT: 08322e1cb51003ce292a132b8774fa2a4c2aa154
 
 jobs:
   build:

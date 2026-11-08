@@ -13,9 +13,11 @@ dotnet run -c Release
 ```
 
 The first window lists the games of the game database. Add one from its folder (the folder of its
-`definition.xml`), or install packages: a game (`.o8g`, or the `.nupkg` of the OCTGN game feed; a newer
-version replaces the installed one) and the card images of an installed game (`.o8c`), as the Windows
-client installs them. Choose a nickname (it comes back next time), and host a game on this computer:
+`definition.xml`, as in the game's repository), or install packages: a game (`.o8g`, or the `.nupkg` of
+the OCTGN game feed) and the card images of an installed game (`.o8c`). Both are installed as the Windows
+client installs a package, a folder as `o8build` would package it: the folder of each set named after
+the set's id (the game database finds a set, and the pictures of its cards, by that name), the card
+images of the sets in the image database, and a newer version replacing the installed one. Choose a nickname (it comes back next time), and host a game on this computer:
 the game server (`Octgn.Online.StandAloneServer`) starts in a process of its own. Another computer, or a
 second instance, joins it with "Join" and the address and port of the game.
 
@@ -23,10 +25,17 @@ Command line: `--game <game folder or .o8g>` hosts that game right away, `--deck
 deck once the game has started, `--nick <name>`, `--data <folder>` (another OCTGN data folder),
 `--verbose` (logs).
 
+Marvel Champions is kept up to date in github.com/Ouroboros009/OCTGN-Marvel-Champions (0.0.3.98 in
+November 2026; github.com/twistedsistem/OCTGN-Marvel-Champions stops at 0.0.3.10, April 2022, without
+the recent packs):
+
 ```sh
-git clone https://github.com/twistedsistem/OCTGN-Marvel-Champions /tmp/mc
+git clone https://github.com/Ouroboros009/OCTGN-Marvel-Champions /tmp/mc
 dotnet run -c Release -- --game /tmp/mc/055c536f-adba-4bc2-acbf-9aefb9756046
 ```
+
+The game loads its decks itself and turns OCTGN's deck loading off: right click on the table, Setup,
+Load Hero, then an out of the box deck, or a deck of MarvelCDB (`.o8d`, or its address).
 
 ## The table
 

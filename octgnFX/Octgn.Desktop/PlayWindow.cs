@@ -196,7 +196,7 @@ namespace Octgn.Desktop
                 var game = Program.GameEngine?.Definition;
                 if (GameSession.IsMissingCard(ex) && game != null)
                     notice += $" This version of {game.Name} ({game.Version}) does not have that card: a deck made for a newer version of the game"
-                        + " needs that version (install its package, .o8g, from the first window).";
+                        + " needs that version (install it from the first window, from its folder or its .o8g).";
                 ShowNotice(notice);
             }
         }

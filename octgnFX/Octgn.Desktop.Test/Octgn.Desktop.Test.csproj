@@ -19,6 +19,7 @@
     <Compile Include="UiFixture.cs" />
     <Compile Include="TableTests.cs" />
     <Compile Include="MarvelChampionsTests.cs" />
+    <Compile Include="MarvelCdbDeckTests.cs" />
     <Compile Include="StartWindowTests.cs" />
     <!-- The packages of a game (.o8g, .o8c), as in the engine's tests. -->
     <Compile Include="..\Octgn.Test.CrossPlatform\Engine\TestPackages.cs" Link="TestPackages.cs" />

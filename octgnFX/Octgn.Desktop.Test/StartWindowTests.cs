@@ -55,7 +55,7 @@ namespace Octgn.Desktop.Test
                 try {
                     Assert.AreEqual(0, start.Games.Count);
                     // The images first: the game is installed before them all the same.
-                    Assert.IsTrue(await start.InstallPackages(new[] { images, game }), start.StatusText);
+                    Assert.IsTrue(await start.Install(new[] { images, game }), start.StatusText);
 
                     var installed = start.Games.Single();
                     Assert.AreEqual($"Installed: {installed.Name} {installed.Version}, card images of {installed.Name} (sample-images.o8c).", start.StatusText);
@@ -74,7 +74,7 @@ namespace Octgn.Desktop.Test
                 var broken = Path.Combine(_work, "broken.o8g");
                 File.WriteAllText(broken, "not a package");
                 var start = new StartWindow();
-                Assert.IsFalse(await start.InstallPackages(new[] { broken }));
+                Assert.IsFalse(await start.Install(new[] { broken }));
                 StringAssert.StartsWith("broken.o8g could not be installed: ", start.StatusText);
             });
         }

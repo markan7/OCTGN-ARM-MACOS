@@ -85,7 +85,14 @@ namespace Octgn.Desktop
 
         public Pack AskPack() => Dialogs.AskPack(_window);
 
+        /// <summary>
+        /// Chooses the file a script opens (openFileDlg) from its filter, in place of the system's dialog (for
+        /// the tests). Null, the default: the system's dialog.
+        /// </summary>
+        public static Func<string, string> ChooseFileToOpen { get; set; }
+
         public string OpenFile(string title, string defaultValue, string filter) {
+            if (ChooseFileToOpen != null) return ChooseFileToOpen(filter) ?? string.Empty;
             var files = Wait(_window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
                 Title = title,
                 AllowMultiple = false,

@@ -3,6 +3,7 @@
 //  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -83,13 +84,17 @@ namespace Octgn.Desktop.Test
 
         protected GroupView View(string name) => Window.PlayerGroupViews.First(v => v.Group.Name == name);
 
-        protected static async Task Until(string what, Func<bool> condition) {
+        protected static async Task Until(string what, Func<bool> condition, Func<string> state = null) {
             var deadline = DateTime.UtcNow + Wait;
             while (!condition()) {
-                if (DateTime.UtcNow > deadline) Assert.Fail("Timed out waiting until " + what);
+                if (DateTime.UtcNow > deadline) Assert.Fail("Timed out waiting until " + what + (state == null ? "" : ". " + state()));
                 await Task.Delay(30);
             }
         }
+
+        /// <summary>What the game said in the chat, and the questions it asked: for the messages of the failures.</summary>
+        protected string GameState(IEnumerable<string> questions) =>
+            "Questions: " + string.Join(" / ", questions) + ". End of the chat: " + string.Join(" | ", (Window?.ChatText ?? Array.Empty<string>()).Where(t => !t.Contains(" deletes ")).TakeLast(30));
 
         protected Task Save(string name) => Save(Window, name);
 

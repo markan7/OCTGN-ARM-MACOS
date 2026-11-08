@@ -85,6 +85,38 @@ namespace Octgn.Test.Engine
             CollectionAssert.AreEqual(TestPackages.Png, File.ReadAllBytes(picture));
         }
 
+        [Test, Order(4)]
+        public void AGameFolderInstallsAsItsPackageWould() {
+            // The folder of a game as in its repository: a set in a folder named after the set (not its id),
+            // with card images. And, installed, an older version that had a set in a folder of that kind.
+            var folder = Path.GetDirectoryName(Headless.SampleGame.Prepare(Path.Combine(_work, "Repository")));
+            var setFolder = Directory.GetDirectories(Path.Combine(folder, "Sets")).Single();
+            Assert.AreEqual("Base-Set", Path.GetFileName(setFolder));
+            var set = XDocument.Load(Path.Combine(setFolder, "set.xml")).Root;
+            var setId = (string)set.Attribute("id");
+            var cardId = (string)set.Descendants("card").First().Attribute("id");
+            var bundled = TestPackages.Png.Concat(new byte[] { 1 }).ToArray();
+            Directory.CreateDirectory(Path.Combine(setFolder, "Cards"));
+            File.WriteAllBytes(Path.Combine(setFolder, "Cards", cardId + ".png"), bundled);
+            File.WriteAllText(Path.Combine(folder, "README.md"), "Not part of the game.");
+            var installed = GameSession.InstalledGames().Single();
+            var oldSet = Path.Combine(installed.InstallPath, "Sets", "Base-Set");
+            Directory.CreateDirectory(Path.Combine(oldSet, "Cards"));
+            File.Copy(Path.Combine(setFolder, "set.xml"), Path.Combine(oldSet, "set.xml"));
+
+            var game = GameSession.InstallGame(folder);
+
+            // As o8build packages it: the set in the folder of its id, the old folder gone (its set was the
+            // same set: twice in the game), the files of the root that are not the game's left out.
+            Assert.That(Directory.GetDirectories(Path.Combine(game.InstallPath, "Sets")).Select(Path.GetFileName), Is.EqualTo(new[] { setId }));
+            Assert.AreEqual(1, game.Sets().Count());
+            FileAssert.DoesNotExist(Path.Combine(game.InstallPath, "README.md"));
+            // The images that come with the sets go to the image database, as the WPF client moves them.
+            var card = game.AllCards().Single(c => c.Id == Guid.Parse(cardId));
+            Assert.IsNotNull(card.GetSet());
+            CollectionAssert.AreEqual(bundled, File.ReadAllBytes(card.GetPicture()));
+        }
+
         [Test]
         public void TheImagesOfAGameNotInstalledAreRefused() {
             var package = Path.Combine(_work, "other-images.o8c");

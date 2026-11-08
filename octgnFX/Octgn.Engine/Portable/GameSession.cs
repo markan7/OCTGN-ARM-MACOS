@@ -120,9 +120,11 @@ namespace Octgn.Portable
 
         /// <summary>
         /// Puts a game in the game database of the data folder, where the engine looks for it, and returns it.
-        /// The game is a folder with its definition.xml and its Sets folder (or that definition.xml), or its
-        /// package: an .o8g file, or the .nupkg of the OCTGN game feed (a NuGet package with the game in its
-        /// def folder), installed as the WPF client's game manager does. A newer version replaces the old one.
+        /// The game is a folder with its definition.xml and its Sets folder (or that definition.xml), as in the
+        /// game's repository, or its package: an .o8g file, or the .nupkg of the OCTGN game feed (a NuGet
+        /// package with the game in its def folder). Both are installed as the WPF client's game manager
+        /// installs a package (a folder as o8build would package it): a newer version replaces the old one,
+        /// whose files go.
         /// </summary>
         public static Game InstallGame(string path) {
             Initialize();
@@ -132,13 +134,8 @@ namespace Octgn.Portable
             var game = (Game)new GameSerializer().Deserialize(definition);
             var target = Path.Combine(Config.Instance.Paths.DatabasePath, game.Id.ToString());
             if (!string.Equals(Path.GetFullPath(target).TrimEnd(Path.DirectorySeparatorChar), source.TrimEnd(Path.DirectorySeparatorChar), StringComparison.Ordinal)) {
-                foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories)) {
-                    var relative = Path.GetRelativePath(source, file);
-                    if (relative.StartsWith(".git", StringComparison.Ordinal)) continue;
-                    var destination = Path.Combine(target, relative);
-                    Directory.CreateDirectory(Path.GetDirectoryName(destination));
-                    File.Copy(file, destination, true);
-                }
+                GameManager.Get().InstallGame(new FolderGamePackage(source, game));
+                AfterInstall(game.Id);
             }
             return Reload(game.Id)
                 ?? throw new InvalidOperationException($"The game {game.Name} ({game.Id}) is not in the game database after its installation.");
@@ -158,8 +155,40 @@ namespace Octgn.Portable
             if (!Guid.TryParse(package.Id, out var id))
                 throw new InvalidOperationException($"{Path.GetFileName(path)} is not a game package: its id ({package.Id}) is not the id of a game.");
             GameManager.Get().InstallGame(package);
-            return Reload(id)
-                ?? throw new InvalidOperationException($"{Path.GetFileName(path)} holds no game (a def folder with its definition.xml).");
+            if (Reload(id) == null)
+                throw new InvalidOperationException($"{Path.GetFileName(path)} holds no game (a def folder with its definition.xml).");
+            AfterInstall(id);
+            return Reload(id);
+        }
+
+        /// <summary>
+        /// What the WPF client does after an installation, at its next start (UpdateChecker): the card images
+        /// that come with the sets of the game (Sets/set id/Cards) go to the image database, where the engine
+        /// looks for the pictures. And the set folders an old version leaves empty go, as the game database
+        /// would read them as sets.
+        /// </summary>
+        private static void AfterInstall(Guid id) {
+            var game = Reload(id);
+            if (game == null) return;
+            var sets = Path.Combine(game.InstallPath, "Sets");
+            if (Directory.Exists(sets)) {
+                foreach (var folder in Directory.GetDirectories(sets)) {
+                    if (Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Any()) continue;
+                    try {
+                        Directory.Delete(folder, true);
+                    } catch (IOException ex) {
+                        Log.Warn("Remove the empty set folder " + folder, ex);
+                    }
+                }
+                game = Reload(id);
+            }
+            foreach (var set in game.Sets()) {
+                if (!Directory.Exists(set.PackUri)) continue;
+                foreach (var file in Directory.GetFiles(set.PackUri)) {
+                    Directory.CreateDirectory(set.ImagePackUri);
+                    File.Copy(file, Path.Combine(set.ImagePackUri, Path.GetFileName(file)), true);
+                }
+            }
         }
 
         /// <summary>

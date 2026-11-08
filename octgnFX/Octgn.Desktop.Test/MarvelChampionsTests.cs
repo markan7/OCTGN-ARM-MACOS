@@ -23,15 +23,16 @@ namespace Octgn.Desktop.Test
     using EngineProgram = Octgn.Program;
 
     /// <summary>
-    /// Marvel Champions (a third-party game with 1 728 cards and 7 000 lines of scripts) in the table: its
-    /// "Load Hero" action asks which deck to load (a choice), then which hero (a list of cards), and sets
-    /// the table up. Runs when OCTGN_MARVEL_CHAMPIONS names the game's folder (the one of definition.xml,
-    /// 055c536f-adba-4bc2-acbf-9aefb9756046 in github.com/twistedsistem/OCTGN-Marvel-Champions).
+    /// Marvel Champions (a third-party game: 6 385 cards and 7 700 lines of scripts in its version 0.0.3.98)
+    /// in the table: its "Load Hero" action asks which deck to load (a choice), then which hero (a list of
+    /// cards), and sets the table up. Runs when OCTGN_MARVEL_CHAMPIONS names the game's folder (the one of
+    /// definition.xml, 055c536f-adba-4bc2-acbf-9aefb9756046 in github.com/Ouroboros009/OCTGN-Marvel-Champions,
+    /// where the game is kept up to date; github.com/twistedsistem/OCTGN-Marvel-Champions stops at 0.0.3.10).
     /// </summary>
     [TestFixture, NonParallelizable]
     public class MarvelChampionsTests : UiFixture
     {
-        private static readonly string Folder = Environment.GetEnvironmentVariable("OCTGN_MARVEL_CHAMPIONS");
+        internal static readonly string Folder = Environment.GetEnvironmentVariable("OCTGN_MARVEL_CHAMPIONS");
         private readonly List<string> _questions = new List<string>();
 
         [OneTimeSetUp]
@@ -58,15 +59,23 @@ namespace Octgn.Desktop.Test
         /// </summary>
         private void Answer(Window dialog) {
             _questions.Add(dialog.Title);
+            AnswerWith(dialog, "An out of the box deck");
+        }
+
+        /// <summary>
+        /// Answers a question of the game: yes, else the first of the choices named that is there, else the
+        /// first card of a list, else closes it (no answer).
+        /// </summary>
+        internal static void AnswerWith(Window dialog, params string[] choices) {
             var buttons = dialog.GetLogicalDescendants().OfType<Button>().ToList();
             var yes = buttons.FirstOrDefault(b => (b.Content as string) == "Yes");
             if (yes != null) {
                 yes.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 return;
             }
-            var outOfTheBox = buttons.FirstOrDefault(b => (b.Content as TextBlock)?.Text == "An out of the box deck");
-            if (outOfTheBox != null) {
-                outOfTheBox.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var choice = choices.Select(c => buttons.FirstOrDefault(b => (b.Content as TextBlock)?.Text == c)).FirstOrDefault(b => b != null);
+            if (choice != null) {
+                choice.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 return;
             }
             var list = dialog.GetLogicalDescendants().OfType<ListBox>().FirstOrDefault();
@@ -76,6 +85,13 @@ namespace Octgn.Desktop.Test
                 return;
             }
             dialog.Close();
+        }
+
+        /// <summary>An action of the table, in its menus or their submenus ("Setup" holds Load Hero since 0.0.3.x).</summary>
+        internal static GroupAction TableAction(string name) {
+            IEnumerable<GroupAction> All(IEnumerable<IGroupAction> actions) =>
+                actions.SelectMany(a => a is GroupActionSubmenu g ? All(g.Children) : a is GroupAction action ? new[] { action } : Enumerable.Empty<GroupAction>());
+            return All(EngineProgram.GameEngine.Table.Definition.GroupActions).First(a => a.Name == name);
         }
 
         [Test, Order(1)]
@@ -92,23 +108,37 @@ namespace Octgn.Desktop.Test
         public async Task LoadHeroAsksAndSetsTheTableUp() {
             await Ui(async () => {
                 var table = EngineProgram.GameEngine.Table;
-                var loadHero = table.Definition.GroupActions.OfType<GroupAction>().First(a => a.Name == "Load Hero");
+                var loadHero = TableAction("Load Hero");
                 _questions.Clear();
                 GameActions.RunGroupAction(loadHero, table, new Portable.Point(0, 0));
-                await Until("the hero's cards are on the table and in the hand", () => table.Count > 0 && Pile("Hand").Count > 0);
+                // The hero on the table, the deck shuffled. The opening hand comes with the villain's setup since
+                // 0.0.3.x (it came with the hero's before).
+                await Until("the hero is on the table and the deck ready", () => table.Count > 0 && Pile("Deck").Count > 0, () => GameState(_questions));
                 // Let the rest of the setup (markers, counters) arrive.
                 await Task.Delay(1500);
                 await Save("mc-02-hero");
                 Assert.That(_questions, Has.Some.EqualTo("Choose One"));
                 Assert.That(_questions.Count, Is.GreaterThanOrEqualTo(2), "a choice, then the list of heroes");
-                var errors = Window.ChatText.Where(t => t.Contains("Traceback") || t.Contains("Error")).ToList();
-                Assert.IsEmpty(errors, "script errors: " + string.Join(" | ", errors));
+                AssertNoScriptError(Window);
+
             });
+        }
+
+        /// <summary>No error of the scripts in the chat.</summary>
+        internal static void AssertNoScriptError(PlayWindow window) {
+            var errors = window.ChatText.Where(t => t.Contains("Traceback") || t.Contains("Error")).ToList();
+            Assert.IsEmpty(errors, "script errors: " + string.Join(" | ", errors));
         }
 
         [Test, Order(3)]
         public async Task TheHandsCardsCanBePlayed() {
             await Ui(async () => {
+                if (Pile("Hand").Count == 0) {
+                    // A card drawn as a player draws one: a double click on the deck (Draw).
+                    var deck = View("Deck");
+                    await Click(Center(deck, deck.BoundsOf(Pile("Deck").Cards[0]).Value), count: 2);
+                    await Until("a card is drawn", () => Pile("Hand").Count > 0, () => GameState(_questions));
+                }
                 var hand = View("Hand");
                 var card = Pile("Hand").Cards.Last();
                 var from = Center(hand, hand.BoundsOf(card).Value);
