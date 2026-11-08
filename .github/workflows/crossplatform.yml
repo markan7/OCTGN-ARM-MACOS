@@ -1,7 +1,8 @@
 name: Cross-platform (.NET 10)
 
-# Builds OCTGN.CrossPlatform.sln on macOS (Apple silicon) and Linux, runs the library tests,
-# then the headless check (Octgn.Headless) with the Basic-Game template and with Marvel Champions.
+# Builds OCTGN.CrossPlatform.sln on macOS (Apple silicon) and Linux, runs the library and engine tests,
+# the headless check (Octgn.Headless) with the Basic-Game template and with Marvel Champions, then the
+# tests of the Avalonia table (Octgn.Desktop.Test, without a screen), whose pictures are in the artifacts.
 
 on:
   push:
@@ -15,6 +16,7 @@ permissions:
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: '1'
   DOTNET_NOLOGO: '1'
+  AVALONIA_TELEMETRY_OPTOUT: '1'
   # Marvel Champions game package (third-party), pinned.
   MARVEL_CHAMPIONS_REPOSITORY: https://github.com/twistedsistem/OCTGN-Marvel-Champions
   MARVEL_CHAMPIONS_COMMIT: f4ad056c695d8aa7297f30999fc50f2524775222
@@ -54,7 +56,7 @@ jobs:
           mkdir -p artifacts
           dotnet build OCTGN.CrossPlatform.sln -c Release -bl:artifacts/build.binlog
 
-      - name: Library tests
+      - name: Library and engine tests
         run: dotnet octgnFX/Octgn.Test.CrossPlatform/bin/Release/net10.0/Octgn.Test.CrossPlatform.dll --result=artifacts/TestResults.xml
 
       - name: Headless check (Basic-Game)
@@ -72,6 +74,13 @@ jobs:
         if: success() || failure()
         working-directory: octgnFX/Octgn.Headless
         run: dotnet bin/Release/net10.0/Octgn.Headless.dll --game "$RUNNER_TEMP/marvel-champions/055c536f-adba-4bc2-acbf-9aefb9756046"
+
+      - name: Table tests (Avalonia, headless, Basic-Game and Marvel Champions)
+        if: success() || failure()
+        env:
+          OCTGN_SCREENSHOTS: ${{ github.workspace }}/artifacts/screenshots
+          OCTGN_MARVEL_CHAMPIONS: ${{ runner.temp }}/marvel-champions/055c536f-adba-4bc2-acbf-9aefb9756046
+        run: dotnet octgnFX/Octgn.Desktop.Test/bin/Release/net10.0/Octgn.Desktop.Test.dll --result=artifacts/DesktopTestResults.xml
 
       - uses: actions/upload-artifact@v4
         if: always()
