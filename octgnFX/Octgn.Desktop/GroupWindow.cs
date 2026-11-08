@@ -163,10 +163,9 @@ namespace Octgn.Desktop
             protected override void OnPointerPressed(PointerPressedEventArgs e) {
                 base.OnPointerPressed(e);
                 var point = e.GetCurrentPoint(this);
-                if (point.Properties.IsRightButtonPressed) {
+                if (Gestures.IsContextClick(point, e.KeyModifiers)) {
                     Selection.Clear();
-                    var items = GameActions.CardMenu(_card, null);
-                    if (items.Count > 0) new ContextMenu { ItemsSource = items }.Open(this);
+                    Gestures.OpenMenu(this, GameActions.CardMenu(_card, null));
                 } else if (e.ClickCount == 2) {
                     GameActions.DefaultCardAction(_card);
                 }

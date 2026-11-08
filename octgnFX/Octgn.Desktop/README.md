@@ -13,12 +13,15 @@ dotnet run -c Release
 ```
 
 The first window lists the games of the game database. Add one from its folder (the folder of its
-`definition.xml`, as in an unpacked `.o8g`), choose a nickname, and host a game on this computer: the
-game server (`Octgn.Online.StandAloneServer`) starts in a process of its own. Another computer, or a
+`definition.xml`), or install packages: a game (`.o8g`, or the `.nupkg` of the OCTGN game feed; a newer
+version replaces the installed one) and the card images of an installed game (`.o8c`), as the Windows
+client installs them. Choose a nickname (it comes back next time), and host a game on this computer:
+the game server (`Octgn.Online.StandAloneServer`) starts in a process of its own. Another computer, or a
 second instance, joins it with "Join" and the address and port of the game.
 
-Command line: `--game <game folder>` hosts that game right away, `--deck <file.o8d>` loads a deck once
-the game has started, `--nick <name>`, `--data <folder>` (another OCTGN data folder), `--verbose` (logs).
+Command line: `--game <game folder or .o8g>` hosts that game right away, `--deck <file.o8d>` loads a
+deck once the game has started, `--nick <name>`, `--data <folder>` (another OCTGN data folder),
+`--verbose` (logs).
 
 ```sh
 git clone https://github.com/twistedsistem/OCTGN-Marvel-Champions /tmp/mc
@@ -31,14 +34,20 @@ dotnet run -c Release -- --game /tmp/mc/055c536f-adba-4bc2-acbf-9aefb9756046
   card lands face down. Drag empty space to pan; Shift and drag to select. Scroll to pan; ⌘ or Ctrl and
   scroll, or pinch, to zoom; the toolbar's −, Fit and + too.
 - **Double click**: the default action of the game (Draw on a deck, for instance).
-- **Right click**: the actions of the game for a card or a group, "Move to" a pile, look at a pile.
-- **Keyboard**: the game's shortcuts; Ctrl in a shortcut of the game is Ctrl or ⌘.
+- **Right click** (on macOS also Control + click, or a two-finger click): the actions of the game for a
+  card or a group, "Move to" a pile, look at a pile.
+- **Selection**: ⌘ + click on macOS, Ctrl + click elsewhere, adds a card to the selection or takes it out.
+- **Keyboard**: the game's shortcuts; Ctrl in a shortcut of the game is Ctrl or ⌘ (the menus show it).
+  On macOS ⌘H hides the application: Control + H for a game's Ctrl+H.
 - **Player area**: counters, the expanded piles (the hand of most games) spread out, the other piles
   (yours, then the shared ones) in a row that scrolls.
 - **Right panel**: the hovered card, larger, and the chat.
 
 The questions of the scripts (askChoice, askInteger, askString, confirm, askMarker, askCard, card
 lists, files) are windows of the table.
+
+A deck must only have cards of the installed version of its game: a deck made with a newer version (a
+MarvelCDB deck with a recent pack, for instance) needs that version of the game.
 
 ## Not there yet
 

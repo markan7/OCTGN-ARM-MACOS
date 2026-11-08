@@ -17,6 +17,8 @@ using Octgn.Core.Play;
 using Octgn.DataNew;
 using Octgn.DataNew.Entities;
 using Octgn.Library;
+using Octgn.Library.Exceptions;
+using Octgn.Library.Localization;
 using Octgn.Networking;
 using Octgn.Online.Hosting;
 using Octgn.Play;
@@ -117,12 +119,15 @@ namespace Octgn.Portable
         }
 
         /// <summary>
-        /// Puts a game (a folder with its definition.xml and its Sets folder, as in an .o8g package) in the
-        /// game database of the data folder, where the engine looks for it, and returns it.
+        /// Puts a game in the game database of the data folder, where the engine looks for it, and returns it.
+        /// The game is a folder with its definition.xml and its Sets folder (or that definition.xml), or its
+        /// package: an .o8g file, or the .nupkg of the OCTGN game feed (a NuGet package with the game in its
+        /// def folder), installed as the WPF client's game manager does. A newer version replaces the old one.
         /// </summary>
-        public static Game InstallGame(string folder) {
+        public static Game InstallGame(string path) {
             Initialize();
-            var definition = Directory.Exists(folder) ? Path.Combine(folder, "definition.xml") : folder;
+            if (File.Exists(path) && IsGamePackage(path)) return InstallGamePackage(path);
+            var definition = Directory.Exists(path) ? Path.Combine(path, "definition.xml") : path;
             var source = Path.GetDirectoryName(Path.GetFullPath(definition));
             var game = (Game)new GameSerializer().Deserialize(definition);
             var target = Path.Combine(Config.Instance.Paths.DatabasePath, game.Id.ToString());
@@ -135,8 +140,68 @@ namespace Octgn.Portable
                     File.Copy(file, destination, true);
                 }
             }
-            return GameManager.Get().GetById(game.Id)
+            return Reload(game.Id)
                 ?? throw new InvalidOperationException($"The game {game.Name} ({game.Id}) is not in the game database after its installation.");
+        }
+
+        /// <summary>A game package: .o8g, or .nupkg as the OCTGN game feed serves it.</summary>
+        public static bool IsGamePackage(string path) {
+            var extension = Path.GetExtension(path);
+            return extension.Equals(".o8g", StringComparison.OrdinalIgnoreCase) || extension.Equals(".nupkg", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>A package of card images (.o8c).</summary>
+        public static bool IsImagePack(string path) => Path.GetExtension(path).Equals(".o8c", StringComparison.OrdinalIgnoreCase);
+
+        private static Game InstallGamePackage(string path) {
+            var package = Core.Packaging.GamePackage.FromFile(path);
+            if (!Guid.TryParse(package.Id, out var id))
+                throw new InvalidOperationException($"{Path.GetFileName(path)} is not a game package: its id ({package.Id}) is not the id of a game.");
+            GameManager.Get().InstallGame(package);
+            return Reload(id)
+                ?? throw new InvalidOperationException($"{Path.GetFileName(path)} holds no game (a def folder with its definition.xml).");
+        }
+
+        /// <summary>
+        /// Installs a package of card images (.o8c: game id/Sets/set id/Cards/card id.jpg) of an installed game,
+        /// where the engine looks for the pictures of the cards, and returns that game.
+        /// </summary>
+        public static Game InstallImagePack(string path) {
+            Initialize();
+            Guid? id = null;
+            using (var zip = System.IO.Compression.ZipFile.OpenRead(path)) {
+                foreach (var entry in zip.Entries) {
+                    if (Guid.TryParse(entry.FullName.Split('/', '\\')[0], out var gameId)) {
+                        id = gameId;
+                        break;
+                    }
+                }
+            }
+            if (id == null) throw new InvalidOperationException($"{Path.GetFileName(path)} is not a package of card images.");
+            var game = GameManager.Get().GetById(id.Value)
+                ?? throw new InvalidOperationException($"{Path.GetFileName(path)} holds card images of a game that is not installed ({id}): install the game first.");
+            GameManager.Get().Installo8c(path);
+            return game;
+        }
+
+        /// <summary>
+        /// The game as its files are now. The game database keeps the games it read, and only forgets one when
+        /// a file watcher tells it, a moment after a change: an update would still read the old version.
+        /// </summary>
+        private static Game Reload(Guid id) {
+            if (DbContext.Get() is IDbContextCaching cache) cache.Invalidate(new Game { Id = id });
+            return GameManager.Get().GetById(id);
+        }
+
+        /// <summary>
+        /// The deck could not be loaded because one of its cards is not in the game: a deck of a newer version
+        /// of the game (a pack the installed version does not have), as decks of MarvelCDB and other sites can be.
+        /// </summary>
+        public static bool IsMissingCard(Exception ex) {
+            if (!(ex is UserMessageException)) return false;
+            var pattern = "^" + System.Text.RegularExpressions.Regex.Replace(
+                System.Text.RegularExpressions.Regex.Escape(L.D.Exception__CanNotLoadDeckCardNotInstalled_Format), @"\\\{\d+}", ".*") + "$";
+            return System.Text.RegularExpressions.Regex.IsMatch(ex.Message, pattern, System.Text.RegularExpressions.RegexOptions.Singleline);
         }
 
         /// <summary>The games of the game database.</summary>

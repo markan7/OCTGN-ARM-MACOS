@@ -8,3 +8,4 @@ using System.Runtime.CompilerServices;
 // and the tests of the cross-platform build use it as the WPF views do.
 [assembly: InternalsVisibleTo("Octgn.Desktop")]
 [assembly: InternalsVisibleTo("Octgn.Test.CrossPlatform")]
+[assembly: InternalsVisibleTo("Octgn.Desktop.Test")]

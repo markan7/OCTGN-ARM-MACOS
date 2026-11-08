@@ -33,7 +33,6 @@ namespace Octgn.Desktop.Test
         protected static readonly TimeSpan Wait = TimeSpan.FromSeconds(30);
         private static HeadlessUnitTestSession _session;
         private string _work;
-        private string _screenshots;
 
         protected GameSession Game { get; private set; }
 
@@ -51,8 +50,6 @@ namespace Octgn.Desktop.Test
         protected async Task OpenGame(Func<string, string> prepareGameFolder, string nickname, int broadcastPort) {
             _work = Path.Combine(Path.GetTempPath(), "octgn-desktop-tests-" + Guid.NewGuid().ToString("N").Substring(0, 8));
             Directory.CreateDirectory(_work);
-            _screenshots = Environment.GetEnvironmentVariable("OCTGN_SCREENSHOTS") ?? Path.Combine(AppContext.BaseDirectory, "screenshots");
-            Directory.CreateDirectory(_screenshots);
 
             App.SetUpEngine(Path.Combine(_work, "Data"));
             var game = GameSession.InstallGame(prepareGameFolder(_work));
@@ -96,6 +93,15 @@ namespace Octgn.Desktop.Test
 
         protected Task Save(string name) => Save(Window, name);
 
+        /// <summary>The folder of the pictures: OCTGN_SCREENSHOTS, or the "screenshots" folder of the output.</summary>
+        private static string Screenshots {
+            get {
+                var folder = Environment.GetEnvironmentVariable("OCTGN_SCREENSHOTS") ?? Path.Combine(AppContext.BaseDirectory, "screenshots");
+                Directory.CreateDirectory(folder);
+                return folder;
+            }
+        }
+
         /// <summary>
         /// A picture of a window as it is now: the UI thread commits the changes to the renderer between timer
         /// ticks, so it runs its jobs around them.
@@ -108,7 +114,7 @@ namespace Octgn.Desktop.Test
             }
             Dispatcher.UIThread.RunJobs();
             var frame = window.CaptureRenderedFrame();
-            frame?.Save(Path.Combine(_screenshots, name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            frame?.Save(Path.Combine(Screenshots, name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
         }
 
         /// <summary>The window point at the center of a rectangle of a view.</summary>

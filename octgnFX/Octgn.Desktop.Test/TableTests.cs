@@ -198,5 +198,59 @@ namespace Octgn.Desktop.Test
                 opened.Close();
             });
         }
+
+        [Test, Order(10)]
+        public async Task TheClicksFollowThePlatform() {
+            await Ui(async () => {
+                var table = Window.Table;
+                var card = EngineProgram.GameEngine.Table.Cards[0];
+                var center = table.TranslatePoint(table.ToScreen(card.X + card.RealWidth / 2.0, card.Y + card.RealHeight / 2.0), Window).Value;
+                // Two points of the card, clicked in turn: two clicks at one point would make a double click.
+                var points = new[] { center, center + new Vector(0, 8) };
+                var next = 0;
+                Task ClickCard(RawInputModifiers modifiers, MouseButton button = MouseButton.Left) => Click(points[next++ % 2], button: button, modifiers: modifiers);
+                var menus = new List<ContextMenu>();
+                void Opened(ContextMenu menu) => menus.Add(menu);
+                var mac = Gestures.MacConventions;
+                Gestures.MenuOpened += Opened;
+                try {
+                    Play.Gui.Selection.Clear();
+
+                    // Windows and Linux: Ctrl + click adds the card to the selection or takes it out.
+                    Gestures.MacConventions = false;
+                    await ClickCard(RawInputModifiers.Control);
+                    Assert.IsTrue(card.Selected, "Ctrl + click selects the card");
+                    await ClickCard(RawInputModifiers.Control);
+                    Assert.IsFalse(card.Selected, "Ctrl + click again takes it out of the selection");
+                    Assert.IsEmpty(menus);
+                    await ClickCard(RawInputModifiers.None, MouseButton.Right);
+                    Assert.AreEqual(1, menus.Count, "the right button opens the card's menu");
+                    menus[0].Close();
+
+                    // macOS: Control + click is the secondary click, ⌘ + click adds to the selection.
+                    Gestures.MacConventions = true;
+                    await ClickCard(RawInputModifiers.Control);
+                    Assert.AreEqual(2, menus.Count, "Control + click opens the card's menu");
+                    Assert.That(menus[1].ItemsSource.OfType<MenuItem>().Select(i => i.Header as string), Does.Contain("Rotate Card"));
+                    Assert.IsFalse(card.Selected);
+                    menus[1].Close();
+                    await ClickCard(RawInputModifiers.Meta);
+                    Assert.IsTrue(card.Selected, "⌘ + click selects the card");
+                    await ClickCard(RawInputModifiers.Meta);
+                    Assert.IsFalse(card.Selected, "⌘ + click again takes it out of the selection");
+
+                    // The piles too: Control + click on the deck opens its menu, with the deck's actions.
+                    var deck = View("Deck");
+                    await Click(Center(deck, deck.BoundsOf(Pile("Deck").Cards[0]).Value), modifiers: RawInputModifiers.Control);
+                    Assert.AreEqual(3, menus.Count, "Control + click on the deck opens its menu");
+                    Assert.That(menus[2].ItemsSource.OfType<MenuItem>().Select(i => i.Header as string), Does.Contain("Draw"));
+                } finally {
+                    Gestures.MacConventions = mac;
+                    Gestures.MenuOpened -= Opened;
+                    foreach (var menu in menus) menu.Close();
+                    Play.Gui.Selection.Clear();
+                }
+            });
+        }
     }
 }

@@ -192,7 +192,12 @@ namespace Octgn.Desktop
                 GameSession.LoadDeck(path);
             } catch (Exception ex) {
                 Log.Warn("Load deck " + path, ex);
-                ShowNotice($"The deck {System.IO.Path.GetFileName(path)} could not be loaded: {ex.Message}");
+                var notice = $"The deck {System.IO.Path.GetFileName(path)} could not be loaded: {ex.Message}";
+                var game = Program.GameEngine?.Definition;
+                if (GameSession.IsMissingCard(ex) && game != null)
+                    notice += $" This version of {game.Name} ({game.Version}) does not have that card: a deck made for a newer version of the game"
+                        + " needs that version (install its package, .o8g, from the first window).";
+                ShowNotice(notice);
             }
         }
 

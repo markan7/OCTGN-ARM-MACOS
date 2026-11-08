@@ -237,7 +237,7 @@ namespace Octgn.Desktop
             var card = CardAt(point.Position);
             UpdatePointerPosition(point.Position);
 
-            if (point.Properties.IsRightButtonPressed) {
+            if (Gestures.IsContextClick(point, e.KeyModifiers)) {
                 ShowMenu(card, point.Position);
                 e.Handled = true;
                 return;
@@ -256,8 +256,7 @@ namespace Octgn.Desktop
                     e.Handled = true;
                     return;
                 }
-                var toggle = (e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta)) != 0;
-                if (toggle) {
+                if (Gestures.TogglesSelection(e.KeyModifiers)) {
                     if (card.Selected) Selection.Remove(card); else Selection.Add(card);
                 } else if (!card.Selected) {
                     Selection.Clear();
@@ -329,7 +328,7 @@ namespace Octgn.Desktop
                 _dragLayer.Drop(e.GetPosition(_dragLayer));
             } else if (_pressedCard != null) {
                 // A click on a card: select it.
-                if ((e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta)) == 0) {
+                if (!Gestures.TogglesSelection(e.KeyModifiers)) {
                     Selection.Clear();
                     if (_pressedCard.Group == _table) Selection.Add(_pressedCard);
                 }
@@ -408,9 +407,7 @@ namespace Octgn.Desktop
             } else {
                 items = GameActions.GroupMenu(_table, at);
             }
-            if (items.Count == 0) return;
-            var menu = new ContextMenu { ItemsSource = items };
-            menu.Open(this);
+            Gestures.OpenMenu(this, items);
         }
 
         // Drop

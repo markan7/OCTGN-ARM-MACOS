@@ -30,6 +30,8 @@
     <Compile Include="Core\ColorTests.cs" />
     <Compile Include="Core\PackageRepositoryTests.cs" />
     <Compile Include="Engine\GameEngineTests.cs" />
+    <Compile Include="Engine\GamePackageTests.cs" />
+    <Compile Include="Engine\TestPackages.cs" />
     <Compile Include="Library\HostedGameBroadcastSerializerTests.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -119,11 +119,11 @@ namespace Octgn.Desktop
             var point = e.GetCurrentPoint(this);
             _pressPoint = point.Position;
             var card = CardAt(point.Position);
-            if (point.Properties.IsRightButtonPressed) {
+            if (Gestures.IsContextClick(point, e.KeyModifiers)) {
                 var items = card != null ? GameActions.CardMenu(card, null) : GameActions.GroupMenu(Group, null);
                 if (card != null && items.Count > 0) items.Add(new Separator());
                 if (card != null) items.AddRange(GameActions.GroupMenu(Group, null));
-                if (items.Count > 0) new ContextMenu { ItemsSource = items }.Open(this);
+                Gestures.OpenMenu(this, items);
                 e.Handled = true;
                 return;
             }
@@ -137,7 +137,7 @@ namespace Octgn.Desktop
                 return;
             }
             if (card != null) {
-                if ((e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta)) != 0) {
+                if (Gestures.TogglesSelection(e.KeyModifiers)) {
                     if (card.Selected) Selection.Remove(card); else Selection.Add(card);
                 } else if (!card.Selected) {
                     Selection.Clear();
@@ -179,7 +179,7 @@ namespace Octgn.Desktop
             base.OnPointerReleased(e);
             if (_dragLayer.Current != null && e.Pointer.Captured == this) {
                 _dragLayer.Drop(e.GetPosition(_dragLayer));
-            } else if (_pressedCard != null && (e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta)) == 0) {
+            } else if (_pressedCard != null && !Gestures.TogglesSelection(e.KeyModifiers)) {
                 Selection.Clear();
             }
             _pressedCard = null;

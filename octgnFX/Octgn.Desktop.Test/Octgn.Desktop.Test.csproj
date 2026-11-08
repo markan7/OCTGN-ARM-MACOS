@@ -19,6 +19,9 @@
     <Compile Include="UiFixture.cs" />
     <Compile Include="TableTests.cs" />
     <Compile Include="MarvelChampionsTests.cs" />
+    <Compile Include="StartWindowTests.cs" />
+    <!-- The packages of a game (.o8g, .o8c), as in the engine's tests. -->
+    <Compile Include="..\Octgn.Test.CrossPlatform\Engine\TestPackages.cs" Link="TestPackages.cs" />
     <!-- Game template of Octgn.GameStudio (git submodule), made loadable as in the headless check. -->
     <Compile Include="..\Octgn.Headless\SampleGame.cs" Link="SampleGame.cs" />
     <None Include="..\Octgn.GameStudio\Resources\Templates\Basic-Game\Game Plugin\**\*" Link="SampleGame\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
